@@ -153,7 +153,8 @@ public enum ExpressionType {
     ArrayLengthFunction(ArrayLengthFunction.class),
     ArrayConstructorExpression(ArrayConstructorExpression.class),
     SQLViewTypeFunction(SQLViewTypeFunction.class),
-    ExternalSqlTypeIdFunction(ExternalSqlTypeIdFunction.class);
+    ExternalSqlTypeIdFunction(ExternalSqlTypeIdFunction.class),
+    HexToBytesFunction(HexToBytesFunction.class);
     ExpressionType(Class<? extends Expression> clazz) {
         this.clazz = clazz;
     }
