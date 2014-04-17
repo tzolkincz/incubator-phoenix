@@ -77,12 +77,11 @@ public class FirstByLastByServerAggregator extends BaseAggregator {
 		children.get(1).evaluate(tuple, ptr);
 		byte[] currentOrder = ptr.copyBytes();
 
-		if (useOffset) {
-			children.get(0).evaluate(tuple, ptr);
+		children.get(0).evaluate(tuple, ptr);
 
+		if (useOffset) {
 			if (topValues.size() < offset) {
 				try {
-					children.get(0).evaluate(tuple, ptr);
 					topValues.put(currentOrder, ptr.copyBytes());
 				} catch (Exception e) {
 					logger.error(e.getMessage());
@@ -104,7 +103,6 @@ public class FirstByLastByServerAggregator extends BaseAggregator {
 				}
 
 				if (add) {
-					children.get(0).evaluate(tuple, ptr);
 					topValues.put(currentOrder, ptr.copyBytes());
 				}
 			}
@@ -116,8 +114,6 @@ public class FirstByLastByServerAggregator extends BaseAggregator {
 				isHigher = topOrder.compareTo(currentOrder) < 0;//desc
 			}
 			if (topOrder.getValue().length < 1 || isHigher) {
-				//set pointer to value
-				children.get(0).evaluate(tuple, ptr);
 
 				topValue = ptr.copyBytes();
 				topOrder = new BinaryComparator(currentOrder);
