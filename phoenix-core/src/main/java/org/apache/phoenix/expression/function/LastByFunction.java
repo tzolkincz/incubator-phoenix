@@ -35,7 +35,7 @@ import org.apache.phoenix.schema.PDataType;
 	@FunctionParseNode.Argument(),
 	@FunctionParseNode.Argument(),
     @FunctionParseNode.Argument(allowedTypes={PDataType.INTEGER}, isConstant=true, defaultValue="0")})
-public class LastByFunction extends FirstLastBaseFunction {
+public class LastByFunction extends FirstByLastByBaseFunction {
 
 	public static final String NAME = "LAST_BY";
 

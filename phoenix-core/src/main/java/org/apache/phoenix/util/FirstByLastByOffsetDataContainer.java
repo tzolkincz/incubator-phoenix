@@ -26,6 +26,7 @@ import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 import java.util.TreeMap;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +61,7 @@ public class FirstByLastByOffsetDataContainer extends FirstByLastByDataContainer
 
 		bos.write(useCompression ? (byte) 1 : (byte) 0);
 		bos.write(isAscending ? (byte) 1 : (byte) 0);
-		bos.write(toByteArray(offset));
+		bos.write(Bytes.toBytes(offset)); //bos.write(int) writes only last byte
 
 		ObjectOutput out = null;
 		try {
@@ -71,7 +72,9 @@ public class FirstByLastByOffsetDataContainer extends FirstByLastByDataContainer
 			return payload;
 
 		} finally {
-			out.close();
+			if (out != null) {
+				out.close();
+			}
 			bos.close();
 		}
 	}
@@ -99,21 +102,15 @@ public class FirstByLastByOffsetDataContainer extends FirstByLastByDataContainer
 		} catch (ClassNotFoundException ex) {
 			logger.error(ex.getMessage());
 		} finally {
+			if (in != null) {
+				in.close();
+			}
 			bis.close();
-			in.close();
 		}
 	}
 
 	public TreeMap<byte[], byte[]> getData() {
 		return data;
-	}
-
-	private byte[] toByteArray(int value) {
-		return new byte[]{
-			(byte) (value >> 24),
-			(byte) (value >> 16),
-			(byte) (value >> 8),
-			(byte) value};
 	}
 
 	private int fromByteArray(byte[] bytes) {

@@ -111,7 +111,7 @@ public class FirstByLastByDataContainer {
 			buffer[1] = (byte) 1;
 		}
 
-		//set second byte as lenght of sort data
+		//set second byte as length of sort data
 		buffer[2] = sortLength;
 		int offset = 3; //set current pointer
 
