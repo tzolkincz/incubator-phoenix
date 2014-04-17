@@ -96,9 +96,9 @@ public class FirstAndLastServerAggregator extends BaseAggregator {
 						add = true;
 					}
 				} else { //desc
-					byte[] hiestKey = topValues.firstKey();
-					if (Bytes.compareTo(currentOrder, hiestKey) > 0) {
-						topValues.remove(hiestKey);
+					byte[] highestKey = topValues.firstKey();
+					if (Bytes.compareTo(currentOrder, highestKey) > 0) {
+						topValues.remove(highestKey);
 						add = true;
 					}
 				}
@@ -141,8 +141,6 @@ public class FirstAndLastServerAggregator extends BaseAggregator {
 
 		return out.toString();
 	}
-
-
 
 	@Override
 	public boolean evaluate(Tuple tuple, ImmutableBytesWritable ptr) {
@@ -191,7 +189,12 @@ public class FirstAndLastServerAggregator extends BaseAggregator {
 			useOffset = true;
 		}
 
-		this.isAscending = isAscending;
+		//set order if modified
+		if (children.get(1).getSortOrder() == SortOrder.DESC) {
+			this.isAscending = !isAscending;
+		} else {
+			this.isAscending = isAscending;
+		}
 
 	}
 }

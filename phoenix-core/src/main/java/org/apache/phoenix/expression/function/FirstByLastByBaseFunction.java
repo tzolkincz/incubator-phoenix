@@ -25,14 +25,14 @@ import org.apache.phoenix.schema.tuple.Tuple;
  *
  * @author tzolkincz
  */
-abstract public class FirstLastBaseFunction extends DelegateConstantToCountAggregateFunction {
+abstract public class FirstByLastByBaseFunction extends DelegateConstantToCountAggregateFunction {
 
 	public static String NAME = null;
 
-	public FirstLastBaseFunction() {
+	public FirstByLastByBaseFunction() {
 	}
 
-	public FirstLastBaseFunction(List<Expression> childExpressions, CountAggregateFunction delegate) {
+	public FirstByLastByBaseFunction(List<Expression> childExpressions, CountAggregateFunction delegate) {
 		super(childExpressions, delegate);
 	}
 
