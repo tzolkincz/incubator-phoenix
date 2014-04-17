@@ -79,7 +79,7 @@ public class TimezoneOffsetFunction extends ScalarFunction {
         }
 
         int offset = cachedTimeZones.get(timezone)
-                .getOffset((Long) PDataType.LONG.toObject(ptr.get(), ptr.getOffset(), ptr.getLength()));
+                .getOffset((Long) PDataType.LONG.toObject(ptr, children.get(1).getSortOrder()));
 
         ptr.set(PDataType.INTEGER.toBytes(offset / MILIS_TO_MINUTES));
         return true;
