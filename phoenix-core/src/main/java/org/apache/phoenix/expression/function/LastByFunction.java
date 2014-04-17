@@ -21,17 +21,17 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.phoenix.expression.Expression;
 import org.apache.phoenix.expression.LiteralExpression;
 import org.apache.phoenix.expression.aggregator.Aggregator;
-import org.apache.phoenix.expression.aggregator.FirstAndLastBaseClientAggregator;
-import org.apache.phoenix.expression.aggregator.FirstAndLastServerAggregator;
+import org.apache.phoenix.expression.aggregator.FirstByLastByBaseClientAggregator;
+import org.apache.phoenix.expression.aggregator.FirstByLastByServerAggregator;
 import org.apache.phoenix.parse.FunctionParseNode;
-import org.apache.phoenix.parse.LastAggregateParseNode;
+import org.apache.phoenix.parse.LastByAggregateParseNode;
 import org.apache.phoenix.schema.PDataType;
 
 /**
  *
  * @author tzolkincz
  */
-@FunctionParseNode.BuiltInFunction(name = LastByFunction.NAME, nodeClass = LastAggregateParseNode.class, args = {
+@FunctionParseNode.BuiltInFunction(name = LastByFunction.NAME, nodeClass = LastByAggregateParseNode.class, args = {
 	@FunctionParseNode.Argument(),
 	@FunctionParseNode.Argument(),
     @FunctionParseNode.Argument(allowedTypes={PDataType.INTEGER}, isConstant=true, defaultValue="0")})
@@ -48,7 +48,7 @@ public class LastByFunction extends FirstByLastByBaseFunction {
 
 	@Override
 	public Aggregator newServerAggregator(Configuration conf) {
-		FirstAndLastServerAggregator aggregator = new FirstAndLastServerAggregator();
+		FirstByLastByServerAggregator aggregator = new FirstByLastByServerAggregator();
 		aggregator.init(children, false, ((Number) ((LiteralExpression) children.get(2)).getValue()).intValue());
 
 		return aggregator;
@@ -57,9 +57,8 @@ public class LastByFunction extends FirstByLastByBaseFunction {
 	@Override
 	public Aggregator newClientAggregator() {
 
-		FirstAndLastBaseClientAggregator aggregator = new FirstAndLastBaseClientAggregator();
+		FirstByLastByBaseClientAggregator aggregator = new FirstByLastByBaseClientAggregator();
 		if (children.size() < 3) {
-			//@TODO WTF?
 			aggregator.init(children, 0);
 		} else {
 			aggregator.init(children, ((Number) ((LiteralExpression) children.get(2)).getValue()).intValue());

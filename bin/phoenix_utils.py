@@ -39,4 +39,3 @@ def find(pattern, classPaths):
                 
     return ""
 
-
