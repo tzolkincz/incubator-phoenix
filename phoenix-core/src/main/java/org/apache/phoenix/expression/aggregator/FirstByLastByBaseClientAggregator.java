@@ -43,9 +43,9 @@ import org.slf4j.LoggerFactory;
  */
 @FunctionParseNode.BuiltInFunction(name = LengthFunction.NAME, args = {
 	@FunctionParseNode.Argument(allowedTypes = {PDataType.VARBINARY})})
-public class FirstAndLastBaseClientAggregator extends BaseAggregator {
+public class FirstByLastByBaseClientAggregator extends BaseAggregator {
 
-	private static final Logger logger = LoggerFactory.getLogger(FirstAndLastBaseClientAggregator.class);
+	private static final Logger logger = LoggerFactory.getLogger(FirstByLastByBaseClientAggregator.class);
 	protected final ImmutableBytesWritable value = new ImmutableBytesWritable(ByteUtil.EMPTY_BYTE_ARRAY);
 	protected List<Expression> children;
 	protected boolean useOffset = false;
@@ -57,7 +57,7 @@ public class FirstAndLastBaseClientAggregator extends BaseAggregator {
 	protected boolean isAscending;
 	private final PDataType dataType = PDataType.VARBINARY;
 
-	public FirstAndLastBaseClientAggregator() {
+	public FirstByLastByBaseClientAggregator() {
 		super(SortOrder.getDefault());
 	}
 

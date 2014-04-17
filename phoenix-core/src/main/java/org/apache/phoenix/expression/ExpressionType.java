@@ -156,8 +156,8 @@ public enum ExpressionType {
     ArrayConstructorExpression(ArrayConstructorExpression.class),
     SQLViewTypeFunction(SQLViewTypeFunction.class),
     ExternalSqlTypeIdFunction(ExternalSqlTypeIdFunction.class),
-	FirstByFunction(FirstByFunction.class),
-	LastByFunction(LastByFunction.class);
+    FirstByFunction(FirstByFunction.class),
+    LastByFunction(LastByFunction.class);
     ExpressionType(Class<? extends Expression> clazz) {
         this.clazz = clazz;
     }

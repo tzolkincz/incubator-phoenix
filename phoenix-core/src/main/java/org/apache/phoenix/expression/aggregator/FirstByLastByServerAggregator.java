@@ -39,9 +39,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author tzolkincz
  */
-public class FirstAndLastServerAggregator extends BaseAggregator {
+public class FirstByLastByServerAggregator extends BaseAggregator {
 
-	private static final Logger logger = LoggerFactory.getLogger(FirstAndLastServerAggregator.class);
+	private static final Logger logger = LoggerFactory.getLogger(FirstByLastByServerAggregator.class);
 	protected List<Expression> children;
 	protected BinaryComparator topOrder = new BinaryComparator(ByteUtil.EMPTY_BYTE_ARRAY);
 	protected byte[] topValue;
@@ -50,7 +50,7 @@ public class FirstAndLastServerAggregator extends BaseAggregator {
 	protected TreeMap<byte[], byte[]> topValues = new TreeMap<byte[], byte[]>(new BinarySerializableComparator());
 	protected boolean isAscending;
 
-	public FirstAndLastServerAggregator() {
+	public FirstByLastByServerAggregator() {
 		super(SortOrder.getDefault());
 	}
 
