@@ -74,4 +74,26 @@ public class TimezoneOffsetFunctionIT extends BaseHBaseManagedTimeIT {
         fail();
 
     }
+
+    @Test
+    public void testInRowKeyDSTTimezoneDesc() throws Exception {
+        Connection conn = DriverManager.getConnection(getUrl());
+        String ddl = "CREATE TABLE IF NOT EXISTS TIMEZONE_OFFSET_TEST "
+        		+ "(k1 INTEGER NOT NULL, dates DATE NOT NULL CONSTRAINT pk PRIMARY KEY (k1, dates DESC))";
+        conn.createStatement().execute(ddl);
+        String dml = "UPSERT INTO TIMEZONE_OFFSET_TEST (k1, dates) VALUES (1, TO_DATE('2014-02-02 00:00:00'))";
+        conn.createStatement().execute(dml);
+        dml = "UPSERT INTO TIMEZONE_OFFSET_TEST (k1, dates) VALUES (2, TO_DATE('2014-06-02 00:00:00'))";
+        conn.createStatement().execute(dml);
+        conn.commit();
+        
+        ResultSet rs = conn.createStatement().executeQuery(
+        		"SELECT k1, dates, TIMEZONE_OFFSET('Europe/Prague', dates)"
+        		+ "FROM TIMEZONE_OFFSET_TEST ORDER BY k1 ASC");
+        
+        assertTrue(rs.next());
+        assertEquals(60, rs.getInt(3));
+        assertTrue(rs.next());
+        assertEquals(120, rs.getInt(3));
+    }
 }
