@@ -67,6 +67,8 @@ import org.apache.phoenix.expression.function.UpperFunction;
 import org.apache.phoenix.expression.function.HexToBytesFunction;
 
 import com.google.common.collect.Maps;
+import org.apache.phoenix.expression.function.FirstByFunction;
+import org.apache.phoenix.expression.function.LastByFunction;
 
 /**
  *
@@ -155,7 +157,8 @@ public enum ExpressionType {
     ArrayConstructorExpression(ArrayConstructorExpression.class),
     SQLViewTypeFunction(SQLViewTypeFunction.class),
 	HexToBytesFunction(HexToBytesFunction.class),
-    ExternalSqlTypeIdFunction(ExternalSqlTypeIdFunction.class);
+    FirstByFunction(FirstByFunction.class),
+    LastByFunction(LastByFunction.class);
     ExpressionType(Class<? extends Expression> clazz) {
         this.clazz = clazz;
     }
