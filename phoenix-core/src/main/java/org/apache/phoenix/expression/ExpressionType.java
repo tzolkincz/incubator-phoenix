@@ -163,7 +163,7 @@ public enum ExpressionType {
     FirstByFunction(FirstByFunction.class),
     LastByFunction(LastByFunction.class),
     ExternalSqlTypeIdFunction(ExternalSqlTypeIdFunction.class),
-	ConvertTimezoneFunction(ConvertTimezoneFunction.class);
+	ConvertTimezoneFunction(ConvertTimezoneFunction.class),
     TimezoneOffsetFunction(TimezoneOffsetFunction.class);
     ExpressionType(Class<? extends Expression> clazz) {
         this.clazz = clazz;
