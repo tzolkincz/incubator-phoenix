@@ -66,14 +66,16 @@ import org.apache.phoenix.expression.function.TruncFunction;
 import org.apache.phoenix.expression.function.UpperFunction;
 
 import com.google.common.collect.Maps;
+import static org.apache.phoenix.expression.ExpressionType.ConvertTimezoneFunction;
+import org.apache.phoenix.expression.function.ConvertTimezoneFunction;
 
 /**
- * 
+ *
  * Enumeration of all Expression types that may be evaluated on the server-side.
  * Used during serialization and deserialization to pass Expression between client
  * and server.
  *
- * 
+ *
  * @since 0.1
  */
 public enum ExpressionType {
@@ -153,7 +155,8 @@ public enum ExpressionType {
     ArrayLengthFunction(ArrayLengthFunction.class),
     ArrayConstructorExpression(ArrayConstructorExpression.class),
     SQLViewTypeFunction(SQLViewTypeFunction.class),
-    ExternalSqlTypeIdFunction(ExternalSqlTypeIdFunction.class);
+    ExternalSqlTypeIdFunction(ExternalSqlTypeIdFunction.class),
+	ConvertTimezoneFunction(ConvertTimezoneFunction.class);
     ExpressionType(Class<? extends Expression> clazz) {
         this.clazz = clazz;
     }
