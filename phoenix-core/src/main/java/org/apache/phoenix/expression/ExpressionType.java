@@ -64,10 +64,9 @@ import org.apache.phoenix.expression.function.ToNumberFunction;
 import org.apache.phoenix.expression.function.TrimFunction;
 import org.apache.phoenix.expression.function.TruncFunction;
 import org.apache.phoenix.expression.function.UpperFunction;
+import org.apache.phoenix.expression.function.ConvertTimezoneFunction;
 
 import com.google.common.collect.Maps;
-import static org.apache.phoenix.expression.ExpressionType.ConvertTimezoneFunction;
-import org.apache.phoenix.expression.function.ConvertTimezoneFunction;
 
 /**
  *
