@@ -65,6 +65,7 @@ import org.apache.phoenix.expression.function.TrimFunction;
 import org.apache.phoenix.expression.function.TruncFunction;
 import org.apache.phoenix.expression.function.UpperFunction;
 import org.apache.phoenix.expression.function.HexToBytesFunction;
+import org.apache.phoenix.expression.function.ConvertTimezoneFunction;
 
 import com.google.common.collect.Maps;
 import org.apache.phoenix.expression.function.FirstByFunction;
@@ -158,7 +159,10 @@ public enum ExpressionType {
     SQLViewTypeFunction(SQLViewTypeFunction.class),
 	HexToBytesFunction(HexToBytesFunction.class),
     FirstByFunction(FirstByFunction.class),
-    LastByFunction(LastByFunction.class);
+    LastByFunction(LastByFunction.class),
+    ExternalSqlTypeIdFunction(ExternalSqlTypeIdFunction.class),
+	ConvertTimezoneFunction(ConvertTimezoneFunction.class);
+
     ExpressionType(Class<? extends Expression> clazz) {
         this.clazz = clazz;
     }
