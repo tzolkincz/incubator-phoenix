@@ -66,6 +66,7 @@ import org.apache.phoenix.expression.function.TruncFunction;
 import org.apache.phoenix.expression.function.UpperFunction;
 import org.apache.phoenix.expression.function.HexToBytesFunction;
 import org.apache.phoenix.expression.function.ConvertTimezoneFunction;
+import org.apache.phoenix.expression.function.TimezoneOffsetFunction;
 
 import com.google.common.collect.Maps;
 import org.apache.phoenix.expression.function.FirstByFunction;
@@ -76,6 +77,7 @@ import org.apache.phoenix.expression.function.LastByFunction;
  * Enumeration of all Expression types that may be evaluated on the server-side.
  * Used during serialization and deserialization to pass Expression between client
  * and server.
+ *
  *
  *
  * @since 0.1
@@ -162,7 +164,7 @@ public enum ExpressionType {
     LastByFunction(LastByFunction.class),
     ExternalSqlTypeIdFunction(ExternalSqlTypeIdFunction.class),
 	ConvertTimezoneFunction(ConvertTimezoneFunction.class);
-
+    TimezoneOffsetFunction(TimezoneOffsetFunction.class);
     ExpressionType(Class<? extends Expression> clazz) {
         this.clazz = clazz;
     }
