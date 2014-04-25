@@ -65,11 +65,12 @@ import org.apache.phoenix.expression.function.TrimFunction;
 import org.apache.phoenix.expression.function.TruncFunction;
 import org.apache.phoenix.expression.function.UpperFunction;
 import org.apache.phoenix.expression.function.TimezoneOffsetFunction;
+import org.apache.phoenix.expression.function.HexToBytesFunction;
 
 import com.google.common.collect.Maps;
 
 /**
- * 
+ *
  * Enumeration of all Expression types that may be evaluated on the server-side.
  * Used during serialization and deserialization to pass Expression between client
  * and server.
