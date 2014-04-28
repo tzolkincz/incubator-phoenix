@@ -35,7 +35,6 @@ import org.apache.phoenix.schema.tuple.Tuple;
 /**
  * Returns offset (shift in minutes) of timezone at particular datetime
  *
- * @author tzolkincz
  */
 @FunctionParseNode.BuiltInFunction(name = TimezoneOffsetFunction.NAME, args = {
     @FunctionParseNode.Argument(allowedTypes = {PDataType.VARCHAR}),
