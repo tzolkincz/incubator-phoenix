@@ -17,7 +17,6 @@
  */
 package org.apache.phoenix.expression.function;
 
-
 import java.sql.SQLException;
 import java.util.List;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
@@ -29,19 +28,18 @@ import org.apache.phoenix.schema.tuple.Tuple;
 
 /**
  * Convert string to bytes
- *
- * @author tzolkincz
  */
-@FunctionParseNode.BuiltInFunction(name = HexToBytesFunction.NAME, args = {
-    @FunctionParseNode.Argument(allowedTypes = {PDataType.VARCHAR})})
-public class HexToBytesFunction extends ScalarFunction {
+@FunctionParseNode.BuiltInFunction(name = DecodeFunction.NAME, args = {
+    @FunctionParseNode.Argument(allowedTypes = {PDataType.VARCHAR}),
+    @FunctionParseNode.Argument(allowedTypes = {PDataType.VARCHAR}, isConstant=true)})
+public class DecodeFunction extends ScalarFunction {
 
-    public static final String NAME = "HEX_TO_BYTES";
+    public static final String NAME = "DECODE";
 
-    public HexToBytesFunction() {
+    public DecodeFunction() {
     }
 
-    public HexToBytesFunction(List<Expression> children) throws SQLException {
+    public DecodeFunction(List<Expression> children) throws SQLException {
         super(children);
     }
 
@@ -57,21 +55,43 @@ public class HexToBytesFunction extends ScalarFunction {
 
         PDataType type = expression.getDataType();
         String hexStr = (String) type.toObject(ptr);
+        
+        Expression encodingExpression = getEncodingExpression();
+        if (!encodingExpression.evaluate(tuple, ptr)) {
+            return false;
+        }
 
-        byte[] out = new byte[hexStr.length() / 2];
-        for (int i = 0; i < hexStr.length(); i = i + 2) {
-            try {
-                out[i / 2] = (byte) Integer.parseInt(hexStr.substring(i, i + 2), 16);
-            } catch (NumberFormatException ex) {
-                throw new IllegalDataException("Value " + hexStr.substring(i, i + 2) + " cannot be cast to hex number");
-            } catch (StringIndexOutOfBoundsException ex) {
-                throw new IllegalDataException("Invalid value length, cannot cast to hex number (" + hexStr + ")");
-            }
+        if (ptr.getLength() == 0) {
+            throw new IllegalDataException("Missing bytes encoding.");
+        }
+
+        type = encodingExpression.getDataType();
+        String encoding = ((String)type.toObject(ptr)).toLowerCase();
+        
+        byte out[];
+        if (encoding.equals("hex")) {
+        	out = decodeHex(hexStr);
+        } else {
+            throw new IllegalDataException("Unknown bytes encoding \"" + encoding + "\"");
         }
 
         ptr.set(out);
 
         return true;
+    }
+    
+    private byte[] decodeHex(String hexStr) {
+    	 byte[] out = new byte[hexStr.length() / 2];
+         for (int i = 0; i < hexStr.length(); i = i + 2) {
+             try {
+                 out[i / 2] = (byte) Integer.parseInt(hexStr.substring(i, i + 2), 16);
+             } catch (NumberFormatException ex) {
+                 throw new IllegalDataException("Value " + hexStr.substring(i, i + 2) + " cannot be cast to hex number");
+             } catch (StringIndexOutOfBoundsException ex) {
+                 throw new IllegalDataException("Invalid value length, cannot cast to hex number (" + hexStr + ")");
+             }
+         }
+         return out;
     }
 
     @Override
@@ -86,6 +106,10 @@ public class HexToBytesFunction extends ScalarFunction {
 
     private Expression getExpression() {
         return children.get(0);
+    }
+
+    private Expression getEncodingExpression() {
+        return children.get(1);
     }
 
     @Override

@@ -21,19 +21,18 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.IllegalDataException;
 import org.apache.phoenix.schema.PDataType;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import org.junit.Test;
 
-/**
- *
- * @author tzolkincz
- */
-public class HexToBytesFunctionIT extends BaseHBaseManagedTimeIT {
+public class DecodeFunctionIT extends BaseHBaseManagedTimeIT {
 
     @Test
     public void shouldPass() throws Exception {
@@ -49,9 +48,8 @@ public class HexToBytesFunctionIT extends BaseHBaseManagedTimeIT {
 
         ps.execute();
         conn.commit();
-
-        ResultSet rs = conn.createStatement().executeQuery("SELECT * FROM test_table WHERE page_offset_id = HEX_TO_BYTES('000000008512af277ffffff8')");
-
+        
+        ResultSet rs = conn.createStatement().executeQuery("SELECT * FROM test_table WHERE page_offset_id = DECODE('000000008512af277ffffff8', 'hex')");
         assertTrue(rs.next());
     }
 
@@ -69,7 +67,7 @@ public class HexToBytesFunctionIT extends BaseHBaseManagedTimeIT {
         ps.execute();
         conn.commit();
 
-        ResultSet rs = conn.createStatement().executeQuery("SELECT * FROM test_table WHERE page_offset_id = HEX_TO_BYTES('000000008512af277ffffff8')");
+        ResultSet rs = conn.createStatement().executeQuery("SELECT * FROM test_table WHERE page_offset_id = DECODE('000000008512af277ffffff8', 'hex')");
 
         assertFalse(rs.next());
     }
@@ -82,7 +80,7 @@ public class HexToBytesFunctionIT extends BaseHBaseManagedTimeIT {
         conn.createStatement().execute(ddl);
 
         try {
-            ResultSet rs = conn.createStatement().executeQuery("SELECT * FROM test_table WHERE page_offset_id = HEX_TO_BYTES('zzxxuuyyzzxxuuyy')");
+            conn.createStatement().executeQuery("SELECT * FROM test_table WHERE page_offset_id = DECODE('zzxxuuyyzzxxuuyy', 'hex')");
         } catch (IllegalDataException e) {
             assertTrue(true);
             return;
@@ -91,17 +89,32 @@ public class HexToBytesFunctionIT extends BaseHBaseManagedTimeIT {
     }
 
     @Test
-    public void invalidLenght() throws Exception {
+    public void invalidLength() throws Exception {
         Connection conn = DriverManager.getConnection(getUrl());
         String ddl = "CREATE TABLE test_table ( page_offset_id BINARY(12) NOT NULL CONSTRAINT PK PRIMARY KEY (page_offset_id))";
 
         conn.createStatement().execute(ddl);
 
         try {
-            ResultSet rs = conn.createStatement().executeQuery("SELECT * FROM test_table WHERE page_offset_id = HEX_TO_BYTES('8')");
+            conn.createStatement().executeQuery("SELECT * FROM test_table WHERE page_offset_id = DECODE('8', 'hex')");
         } catch (IllegalDataException e) {
             assertTrue(true);
             return;
+        }
+        fail();
+    }
+    @Test
+    public void nullEncoding() throws Exception {
+        Connection conn = DriverManager.getConnection(getUrl());
+        String ddl = "CREATE TABLE test_table ( page_offset_id BINARY(12) NOT NULL CONSTRAINT PK PRIMARY KEY (page_offset_id))";
+
+        conn.createStatement().execute(ddl);
+
+        try {
+            conn.createStatement().executeQuery("SELECT * FROM test_table WHERE page_offset_id = DECODE('8', NULL)");
+        } catch (IllegalDataException e) {
+          assertTrue(true);
+          return;
         }
         fail();
     }

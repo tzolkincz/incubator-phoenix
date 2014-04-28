@@ -65,7 +65,7 @@ import org.apache.phoenix.expression.function.TrimFunction;
 import org.apache.phoenix.expression.function.TruncFunction;
 import org.apache.phoenix.expression.function.UpperFunction;
 import org.apache.phoenix.expression.function.TimezoneOffsetFunction;
-import org.apache.phoenix.expression.function.HexToBytesFunction;
+import org.apache.phoenix.expression.function.DecodeFunction;
 
 import com.google.common.collect.Maps;
 
