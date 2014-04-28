@@ -64,10 +64,10 @@ import org.apache.phoenix.expression.function.ToNumberFunction;
 import org.apache.phoenix.expression.function.TrimFunction;
 import org.apache.phoenix.expression.function.TruncFunction;
 import org.apache.phoenix.expression.function.UpperFunction;
+import org.apache.phoenix.expression.function.FirstValueFunction;
+import org.apache.phoenix.expression.function.LastValueFunction;
 
 import com.google.common.collect.Maps;
-import org.apache.phoenix.expression.function.FirstByFunction;
-import org.apache.phoenix.expression.function.LastByFunction;
 
 /**
  *
@@ -156,8 +156,8 @@ public enum ExpressionType {
     ArrayConstructorExpression(ArrayConstructorExpression.class),
     SQLViewTypeFunction(SQLViewTypeFunction.class),
     ExternalSqlTypeIdFunction(ExternalSqlTypeIdFunction.class),
-    FirstByFunction(FirstByFunction.class),
-    LastByFunction(LastByFunction.class);
+    FirstValueFunction(FirstValueFunction.class),
+    LastValueFunction(LastValueFunction.class);
     ExpressionType(Class<? extends Expression> clazz) {
         this.clazz = clazz;
     }

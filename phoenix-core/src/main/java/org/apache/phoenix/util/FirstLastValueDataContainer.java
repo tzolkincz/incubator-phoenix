@@ -18,11 +18,10 @@
 package org.apache.phoenix.util;
 
 /**
- * Container for data transfer between server and client aggregation (FirstBy and LastBy functions)
+ * Container for data transfer between server and client aggregation (FIRST|LAST VALUE functions)
  *
- * @author tzolkincz
  */
-public class FirstByLastByDataContainer {
+public class FirstLastValueDataContainer {
 
 	protected boolean useCompression;
 	protected byte[] order;

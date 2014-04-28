@@ -22,17 +22,17 @@ import org.apache.phoenix.expression.Expression;
 import org.apache.phoenix.schema.tuple.Tuple;
 
 /**
+ * FIRST|LAST VALUE build in function interface
  *
- * @author tzolkincz
  */
-abstract public class FirstByLastByBaseFunction extends DelegateConstantToCountAggregateFunction {
+abstract public class FirstLastValueBaseFunction extends DelegateConstantToCountAggregateFunction {
 
 	public static String NAME = null;
 
-	public FirstByLastByBaseFunction() {
+	public FirstLastValueBaseFunction() {
 	}
 
-	public FirstByLastByBaseFunction(List<Expression> childExpressions, CountAggregateFunction delegate) {
+	public FirstLastValueBaseFunction(List<Expression> childExpressions, CountAggregateFunction delegate) {
 		super(childExpressions, delegate);
 	}
 

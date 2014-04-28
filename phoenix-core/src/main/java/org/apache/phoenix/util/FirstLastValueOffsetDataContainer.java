@@ -31,15 +31,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Offset implementation for data container for transfer data between server and client aggregation (FirstBy
- * and LastBy functions)
+ * Offset implementation for data container for transfer data between server and client aggregation
+ * FIRST|LAST VALUE functions
  *
- *
- * @author tzolkincz
  */
-public class FirstByLastByOffsetDataContainer extends FirstByLastByDataContainer {
+public class FirstLastValueOffsetDataContainer extends FirstLastValueDataContainer {
 
-	private static final Logger logger = LoggerFactory.getLogger(FirstByLastByOffsetDataContainer.class);
+	private static final Logger logger = LoggerFactory.getLogger(FirstLastValueOffsetDataContainer.class);
 	protected int offset;
 	private TreeMap<byte[], byte[]> data;
 

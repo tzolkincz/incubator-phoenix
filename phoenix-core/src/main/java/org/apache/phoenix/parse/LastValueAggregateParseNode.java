@@ -22,18 +22,17 @@ import java.util.List;
 
 import org.apache.phoenix.compile.StatementContext;
 import org.apache.phoenix.expression.Expression;
-import org.apache.phoenix.expression.function.FirstByFunction;
 import org.apache.phoenix.expression.function.FunctionExpression;
+import org.apache.phoenix.expression.function.LastValueFunction;
 
+public class LastValueAggregateParseNode extends DelegateConstantToCountParseNode {
 
-public class FirstByAggregateParseNode extends DelegateConstantToCountParseNode {
+	public LastValueAggregateParseNode(String name, List<ParseNode> children, FunctionParseNode.BuiltInFunctionInfo info) {
+		super(name, children, info);
+	}
 
-    public FirstByAggregateParseNode(String name, List<ParseNode> children, FunctionParseNode.BuiltInFunctionInfo info) {
-        super(name, children, info);
-    }
-
-    @Override
-    public FunctionExpression create(List<Expression> children, StatementContext context) throws SQLException {
-        return new FirstByFunction(children, getDelegateFunction(children,context));
-    }
+	@Override
+	public FunctionExpression create(List<Expression> children, StatementContext context) throws SQLException {
+		return new LastValueFunction(children, getDelegateFunction(children, context));
+	}
 }

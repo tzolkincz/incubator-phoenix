@@ -22,8 +22,8 @@ import org.apache.phoenix.schema.PDataType;
 import org.apache.phoenix.schema.tuple.Tuple;
 import org.apache.phoenix.util.BinarySerializableComparator;
 import org.apache.phoenix.util.ByteUtil;
-import org.apache.phoenix.util.FirstByLastByDataContainer;
-import org.apache.phoenix.util.FirstByLastByOffsetDataContainer;
+import org.apache.phoenix.util.FirstLastValueDataContainer;
+import org.apache.phoenix.util.FirstLastValueOffsetDataContainer;
 import org.apache.phoenix.util.SizedUtil;
 import java.io.IOException;
 import java.util.List;
@@ -36,12 +36,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Base server aggregator for FIRST|LAST VALUE functions
  *
- * @author tzolkincz
  */
-public class FirstByLastByServerAggregator extends BaseAggregator {
+public class FirstLastValueServerAggregator extends BaseAggregator {
 
-	private static final Logger logger = LoggerFactory.getLogger(FirstByLastByServerAggregator.class);
+	private static final Logger logger = LoggerFactory.getLogger(FirstLastValueServerAggregator.class);
 	protected List<Expression> children;
 	protected BinaryComparator topOrder = new BinaryComparator(ByteUtil.EMPTY_BYTE_ARRAY);
 	protected byte[] topValue;
@@ -50,7 +50,7 @@ public class FirstByLastByServerAggregator extends BaseAggregator {
 	protected TreeMap<byte[], byte[]> topValues = new TreeMap<byte[], byte[]>(new BinarySerializableComparator());
 	protected boolean isAscending;
 
-	public FirstByLastByServerAggregator() {
+	public FirstLastValueServerAggregator() {
 		super(SortOrder.getDefault());
 	}
 
@@ -124,7 +124,7 @@ public class FirstByLastByServerAggregator extends BaseAggregator {
 
 	@Override
 	public String toString() {
-		StringBuilder out = new StringBuilder("FirstAndLastServerAggregator"
+		StringBuilder out = new StringBuilder("FirstLastValueServerAggregator"
 				+ " is ascending: " + isAscending + " value=");
 		if (useOffset) {
 			for (byte[] key : topValues.keySet()) {
@@ -146,7 +146,7 @@ public class FirstByLastByServerAggregator extends BaseAggregator {
 				return false;
 			}
 
-			FirstByLastByOffsetDataContainer payload = new FirstByLastByOffsetDataContainer();
+			FirstLastValueOffsetDataContainer payload = new FirstLastValueOffsetDataContainer();
 			payload.setIsAscending(isAscending);
 			payload.setOffset(offset);
 			payload.setData(topValues);
@@ -164,7 +164,7 @@ public class FirstByLastByServerAggregator extends BaseAggregator {
 			return false;
 		}
 
-		FirstByLastByDataContainer payload = new FirstByLastByDataContainer();
+		FirstLastValueDataContainer payload = new FirstLastValueDataContainer();
 		payload.setOrdertValue(topOrder.getValue());
 		payload.setValue(topValue);
 		payload.setIsAscending(isAscending);

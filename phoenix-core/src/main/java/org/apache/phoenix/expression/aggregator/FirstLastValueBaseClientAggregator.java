@@ -26,8 +26,8 @@ import org.apache.phoenix.schema.tuple.SingleKeyValueTuple;
 import org.apache.phoenix.schema.tuple.Tuple;
 import org.apache.phoenix.util.BinarySerializableComparator;
 import org.apache.phoenix.util.ByteUtil;
-import org.apache.phoenix.util.FirstByLastByDataContainer;
-import org.apache.phoenix.util.FirstByLastByOffsetDataContainer;
+import org.apache.phoenix.util.FirstLastValueDataContainer;
+import org.apache.phoenix.util.FirstLastValueOffsetDataContainer;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeMap;
@@ -38,14 +38,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Base client aggregator for FIRST|LAST VALUE functions
  *
- * @author tzolkincz
  */
-@FunctionParseNode.BuiltInFunction(name = LengthFunction.NAME, args = {
-	@FunctionParseNode.Argument(allowedTypes = {PDataType.VARBINARY})})
-public class FirstByLastByBaseClientAggregator extends BaseAggregator {
+public class FirstLastValueBaseClientAggregator extends BaseAggregator {
 
-	private static final Logger logger = LoggerFactory.getLogger(FirstByLastByBaseClientAggregator.class);
+	private static final Logger logger = LoggerFactory.getLogger(FirstLastValueBaseClientAggregator.class);
 	protected final ImmutableBytesWritable value = new ImmutableBytesWritable(ByteUtil.EMPTY_BYTE_ARRAY);
 	protected List<Expression> children;
 	protected boolean useOffset = false;
@@ -57,7 +55,7 @@ public class FirstByLastByBaseClientAggregator extends BaseAggregator {
 	protected boolean isAscending;
 	private final PDataType dataType = PDataType.VARBINARY;
 
-	public FirstByLastByBaseClientAggregator() {
+	public FirstLastValueBaseClientAggregator() {
 		super(SortOrder.getDefault());
 	}
 
@@ -106,7 +104,7 @@ public class FirstByLastByBaseClientAggregator extends BaseAggregator {
 	@Override
 	public void aggregate(Tuple tuple, ImmutableBytesWritable ptr) {
 		if (useOffset) {
-			FirstByLastByOffsetDataContainer payload = new FirstByLastByOffsetDataContainer();
+			FirstLastValueOffsetDataContainer payload = new FirstLastValueOffsetDataContainer();
 			try {
 				payload.setPayload(ptr.copyBytes());
 
@@ -125,7 +123,7 @@ public class FirstByLastByBaseClientAggregator extends BaseAggregator {
 			byte[] messageFromRow = new byte[ptr.getSize()];
 			System.arraycopy(ptr.get(), ptr.getOffset(), messageFromRow, 0, ptr.getLength());
 
-			FirstByLastByDataContainer payload = new FirstByLastByDataContainer();
+			FirstLastValueDataContainer payload = new FirstLastValueDataContainer();
 			payload.setBytesMessage(messageFromRow);
 
 			byte[] currentValue = payload.getValue();
