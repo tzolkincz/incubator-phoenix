@@ -49,6 +49,7 @@ public class FirstLastValueServerAggregator extends BaseAggregator {
 	protected int offset = -1;
 	protected TreeMap<byte[], byte[]> topValues = new TreeMap<byte[], byte[]>(new BinarySerializableComparator());
 	protected boolean isAscending;
+	protected boolean hasValueDescSortOrder = false;
 
 	public FirstLastValueServerAggregator() {
 		super(SortOrder.getDefault());
@@ -80,14 +81,14 @@ public class FirstLastValueServerAggregator extends BaseAggregator {
 		children.get(0).evaluate(tuple, ptr);
 
 		if (useOffset) {
+			boolean add = false;
 			if (topValues.size() < offset) {
 				try {
-					topValues.put(currentOrder, ptr.copyBytes());
+					add = true;
 				} catch (Exception e) {
 					logger.error(e.getMessage());
 				}
 			} else {
-				boolean add = false;
 				if (isAscending) {
 					byte[] lowestKey = topValues.lastKey();
 					if (Bytes.compareTo(currentOrder, lowestKey) < 0) {
@@ -101,8 +102,12 @@ public class FirstLastValueServerAggregator extends BaseAggregator {
 						add = true;
 					}
 				}
-
-				if (add) {
+			}
+			if (add) {
+				//invert bytes if is SortOrder set
+				if (hasValueDescSortOrder) {
+					topValues.put(currentOrder, SortOrder.invert(ptr.get(), ptr.getOffset(), ptr.getLength()));
+				} else {
 					topValues.put(currentOrder, ptr.copyBytes());
 				}
 			}
@@ -114,8 +119,12 @@ public class FirstLastValueServerAggregator extends BaseAggregator {
 				isHigher = topOrder.compareTo(currentOrder) < 0;//desc
 			}
 			if (topOrder.getValue().length < 1 || isHigher) {
+				if (hasValueDescSortOrder) {
+					topValue = SortOrder.invert(ptr.get(), ptr.getOffset(), ptr.getLength());
+				} else {
+					topValue = ptr.copyBytes();
+				}
 
-				topValue = ptr.copyBytes();
 				topOrder = new BinaryComparator(currentOrder);
 			}
 		}
@@ -186,6 +195,9 @@ public class FirstLastValueServerAggregator extends BaseAggregator {
 		}
 
 		//set order if modified
+		if (children.get(0).getSortOrder() == SortOrder.DESC) {
+			hasValueDescSortOrder = true;
+		}
 		if (children.get(1).getSortOrder() == SortOrder.DESC) {
 			this.isAscending = !isAscending;
 		} else {

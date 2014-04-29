@@ -193,7 +193,7 @@ public class FirstLastValueFunctionIT extends BaseHBaseManagedTimeIT {
 	}
 
 	@Test
-	public void testColumnModifier() throws Exception {
+	public void testSortOrderInSortCol() throws Exception {
 		Connection conn = DriverManager.getConnection(getUrl());
 
 		String ddl = "CREATE TABLE IF NOT EXISTS firstValue "
@@ -213,6 +213,54 @@ public class FirstLastValueFunctionIT extends BaseHBaseManagedTimeIT {
 
 		assertTrue(rs.next());
 		assertEquals(rs.getLong(1), 3);
+		assertFalse(rs.next());
+	}
+
+	@Test
+	public void testSortOrderInDataCol() throws Exception {
+		Connection conn = DriverManager.getConnection(getUrl());
+
+		String ddl = "CREATE TABLE IF NOT EXISTS firstValue "
+				+ "(id INTEGER NOT NULL, page_id UNSIGNED_LONG NOT NULL,"
+				+ " dates BIGINT NOT NULL, \"value\" BIGINT NOT NULL CONSTRAINT pk PRIMARY KEY (id, dates, \"value\" DESC))";
+		conn.createStatement().execute(ddl);
+
+		conn.createStatement().execute("UPSERT INTO firstValue (id, page_id, dates, \"value\") VALUES (1, 8, 1, 3)");
+		conn.createStatement().execute("UPSERT INTO firstValue (id, page_id, dates, \"value\") VALUES (2, 8, 2, 7)");
+		conn.createStatement().execute("UPSERT INTO firstValue (id, page_id, dates, \"value\") VALUES (3, 8, 3, 9)");
+		conn.createStatement().execute("UPSERT INTO firstValue (id, page_id, dates, \"value\") VALUES (5, 8, 5, 158)");
+		conn.createStatement().execute("UPSERT INTO firstValue (id, page_id, dates, \"value\") VALUES (4, 8, 4, 5)");
+		conn.commit();
+
+		ResultSet rs = conn.createStatement().executeQuery(
+				"SELECT FIRST_VALUE(\"value\", dates) FROM firstValue GROUP BY page_id");
+
+		assertTrue(rs.next());
+		assertEquals(rs.getLong(1), 3);
+		assertFalse(rs.next());
+	}
+
+	@Test
+	public void testSortOrderInDataColWithOffset() throws Exception {
+		Connection conn = DriverManager.getConnection(getUrl());
+
+		String ddl = "CREATE TABLE IF NOT EXISTS firstValue "
+				+ "(id INTEGER NOT NULL, page_id UNSIGNED_LONG NOT NULL,"
+				+ " dates BIGINT NOT NULL, \"value\" BIGINT NOT NULL CONSTRAINT pk PRIMARY KEY (id, dates, \"value\" DESC))";
+		conn.createStatement().execute(ddl);
+
+		conn.createStatement().execute("UPSERT INTO firstValue (id, page_id, dates, \"value\") VALUES (1, 8, 1, 3)");
+		conn.createStatement().execute("UPSERT INTO firstValue (id, page_id, dates, \"value\") VALUES (2, 8, 2, 7)");
+		conn.createStatement().execute("UPSERT INTO firstValue (id, page_id, dates, \"value\") VALUES (3, 8, 3, 9)");
+		conn.createStatement().execute("UPSERT INTO firstValue (id, page_id, dates, \"value\") VALUES (5, 8, 5, 158)");
+		conn.createStatement().execute("UPSERT INTO firstValue (id, page_id, dates, \"value\") VALUES (4, 8, 4, 5)");
+		conn.commit();
+
+		ResultSet rs = conn.createStatement().executeQuery(
+				"SELECT FIRST_VALUE(\"value\", dates, 2) FROM firstValue GROUP BY page_id");
+
+		assertTrue(rs.next());
+		assertEquals(rs.getLong(1), 7);
 		assertFalse(rs.next());
 	}
 
