@@ -18,6 +18,7 @@
 
 package org.apache.phoenix.expression.function;
 
+import java.sql.Date;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
@@ -77,8 +78,8 @@ public class TimezoneOffsetFunction extends ScalarFunction {
             cachedTimeZones.put(timezone, tz);
         }
 
-        int offset = cachedTimeZones.get(timezone)
-                .getOffset((Long) PDataType.LONG.toObject(ptr, children.get(1).getSortOrder()));
+		Date date = (Date)PDataType.DATE.toObject(ptr, children.get(1).getSortOrder());
+		int offset = cachedTimeZones.get(timezone).getOffset(date.getTime());
 
         ptr.set(PDataType.INTEGER.toBytes(offset / MILLIS_TO_MINUTES));
         return true;
