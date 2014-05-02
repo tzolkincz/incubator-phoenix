@@ -89,4 +89,9 @@ public class TimezoneOffsetFunction extends ScalarFunction {
         return PDataType.INTEGER;
     }
 
+	@Override
+    public boolean isNullable() {
+        return children.get(0).isNullable() || children.get(1).isNullable();
+    }
+
 }

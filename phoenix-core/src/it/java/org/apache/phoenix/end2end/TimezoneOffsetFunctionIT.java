@@ -26,75 +26,132 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import org.junit.Test;
 
-
 public class TimezoneOffsetFunctionIT extends BaseHBaseManagedTimeIT {
 
-    @Test
-    public void testTimezoneOffset() throws Exception {
-        Connection conn = DriverManager.getConnection(getUrl());
-        String ddl = "CREATE TABLE IF NOT EXISTS TIMEZONE_OFFSET_TEST"
+	@Test
+	public void testTimezoneOffset() throws Exception {
+		Connection conn = DriverManager.getConnection(getUrl());
+		String ddl = "CREATE TABLE IF NOT EXISTS TIMEZONE_OFFSET_TEST"
 				+ " (k1 INTEGER NOT NULL, dates DATE CONSTRAINT pk PRIMARY KEY (k1))";
-        conn.createStatement().execute(ddl);
-        String dml = "UPSERT INTO TIMEZONE_OFFSET_TEST (k1, dates) VALUES (1, TO_DATE('2014-02-02 00:00:00'))";
-        conn.createStatement().execute(dml);
-        dml = "UPSERT INTO TIMEZONE_OFFSET_TEST (k1, dates) VALUES (2, TO_DATE('2014-06-02 00:00:00'))";
-        conn.createStatement().execute(dml);
-        conn.commit();
+		conn.createStatement().execute(ddl);
+		String dml = "UPSERT INTO TIMEZONE_OFFSET_TEST (k1, dates) VALUES (1, TO_DATE('2014-02-02 00:00:00'))";
+		conn.createStatement().execute(dml);
+		dml = "UPSERT INTO TIMEZONE_OFFSET_TEST (k1, dates) VALUES (2, TO_DATE('2014-06-02 00:00:00'))";
+		conn.createStatement().execute(dml);
+		conn.commit();
 
-        ResultSet rs = conn.createStatement().executeQuery(
+		ResultSet rs = conn.createStatement().executeQuery(
 				"SELECT k1, dates, TIMEZONE_OFFSET('Indian/Cocos', dates) FROM TIMEZONE_OFFSET_TEST");
 
-        assertTrue(rs.next());
-        assertEquals(390, rs.getInt(3));
-        assertTrue(rs.next());
-        assertEquals(390, rs.getInt(3));
+		assertTrue(rs.next());
+		assertEquals(390, rs.getInt(3));
+		assertTrue(rs.next());
+		assertEquals(390, rs.getInt(3));
 
-    }
+	}
 
-    @Test
-    public void testUnknownTimezone() throws Exception {
-        Connection conn = DriverManager.getConnection(getUrl());
-        String ddl = "CREATE TABLE IF NOT EXISTS TIMEZONE_OFFSET_TEST"
+	@Test
+	public void testUnknownTimezone() throws Exception {
+		Connection conn = DriverManager.getConnection(getUrl());
+		String ddl = "CREATE TABLE IF NOT EXISTS TIMEZONE_OFFSET_TEST"
 				+ " (k1 INTEGER NOT NULL, dates DATE CONSTRAINT pk PRIMARY KEY (k1))";
-        conn.createStatement().execute(ddl);
-        String dml = "UPSERT INTO TIMEZONE_OFFSET_TEST (k1, dates) VALUES (1, TO_DATE('2014-02-02 00:00:00'))";
-        conn.createStatement().execute(dml);
-        conn.commit();
+		conn.createStatement().execute(ddl);
+		String dml = "UPSERT INTO TIMEZONE_OFFSET_TEST (k1, dates) VALUES (1, TO_DATE('2014-02-02 00:00:00'))";
+		conn.createStatement().execute(dml);
+		conn.commit();
 
-        try {
-            ResultSet rs = conn.createStatement().executeQuery(
+		try {
+			ResultSet rs = conn.createStatement().executeQuery(
 					"SELECT k1, dates, TIMEZONE_OFFSET('Unknown_Timezone', dates) FROM TIMEZONE_OFFSET_TEST");
 
-            rs.next();
-            assertEquals(0, rs.getInt(3));
-            fail();
-        } catch (IllegalDataException e) {
-            assertTrue(true);
-            return;
-        }
-        fail();
+			rs.next();
+			assertEquals(0, rs.getInt(3));
+			fail();
+		} catch (IllegalDataException e) {
+			assertTrue(true);
+			return;
+		}
+		fail();
 
-    }
+	}
 
-    @Test
-    public void testInRowKeyDSTTimezoneDesc() throws Exception {
-        Connection conn = DriverManager.getConnection(getUrl());
-        String ddl = "CREATE TABLE IF NOT EXISTS TIMEZONE_OFFSET_TEST "
-        		+ "(k1 INTEGER NOT NULL, dates DATE NOT NULL CONSTRAINT pk PRIMARY KEY (k1, dates DESC))";
-        conn.createStatement().execute(ddl);
-        String dml = "UPSERT INTO TIMEZONE_OFFSET_TEST (k1, dates) VALUES (1, TO_DATE('2014-02-02 00:00:00'))";
-        conn.createStatement().execute(dml);
-        dml = "UPSERT INTO TIMEZONE_OFFSET_TEST (k1, dates) VALUES (2, TO_DATE('2014-06-02 00:00:00'))";
-        conn.createStatement().execute(dml);
-        conn.commit();
+	@Test
+	public void testInRowKeyDSTTimezoneDesc() throws Exception {
+		Connection conn = DriverManager.getConnection(getUrl());
+		String ddl = "CREATE TABLE IF NOT EXISTS TIMEZONE_OFFSET_TEST "
+				+ "(k1 INTEGER NOT NULL, dates DATE NOT NULL CONSTRAINT pk PRIMARY KEY (k1, dates DESC))";
+		conn.createStatement().execute(ddl);
+		String dml = "UPSERT INTO TIMEZONE_OFFSET_TEST (k1, dates) VALUES (1, TO_DATE('2014-02-02 00:00:00'))";
+		conn.createStatement().execute(dml);
+		dml = "UPSERT INTO TIMEZONE_OFFSET_TEST (k1, dates) VALUES (2, TO_DATE('2014-06-02 00:00:00'))";
+		conn.createStatement().execute(dml);
+		conn.commit();
 
-        ResultSet rs = conn.createStatement().executeQuery(
-        		"SELECT k1, dates, TIMEZONE_OFFSET('Europe/Prague', dates)"
-        		+ "FROM TIMEZONE_OFFSET_TEST ORDER BY k1 ASC");
+		ResultSet rs = conn.createStatement().executeQuery(
+				"SELECT k1, dates, TIMEZONE_OFFSET('Europe/Prague', dates)"
+				+ "FROM TIMEZONE_OFFSET_TEST ORDER BY k1 ASC");
 
-        assertTrue(rs.next());
-        assertEquals(60, rs.getInt(3));
-        assertTrue(rs.next());
-        assertEquals(120, rs.getInt(3));
-    }
+		assertTrue(rs.next());
+		assertEquals(60, rs.getInt(3));
+		assertTrue(rs.next());
+		assertEquals(120, rs.getInt(3));
+	}
+
+	@Test
+	public void testBothParametersNull() throws Exception {
+		Connection conn = DriverManager.getConnection(getUrl());
+		String ddl = "CREATE TABLE IF NOT EXISTS TIMEZONE_OFFSET_TEST "
+				+ "(k1 INTEGER NOT NULL, dates DATE, v1 VARCHAR CONSTRAINT pk PRIMARY KEY (k1))";
+		conn.createStatement().execute(ddl);
+		String dml = "UPSERT INTO TIMEZONE_OFFSET_TEST (k1, dates, v1) VALUES (2, null, null)";
+		conn.createStatement().execute(dml);
+		conn.commit();
+
+		ResultSet rs = conn.createStatement().executeQuery(
+				"SELECT k1, dates, TIMEZONE_OFFSET(v1, dates)"
+				+ "FROM TIMEZONE_OFFSET_TEST ORDER BY k1 ASC");
+
+		assertTrue(rs.next());
+		rs.getInt(3);
+		assertTrue(rs.wasNull());
+	}
+
+	@Test
+	public void timezoneParameterNull() throws Exception {
+		Connection conn = DriverManager.getConnection(getUrl());
+		String ddl = "CREATE TABLE IF NOT EXISTS TIMEZONE_OFFSET_TEST "
+				+ "(k1 INTEGER NOT NULL, dates DATE, v1 VARCHAR CONSTRAINT pk PRIMARY KEY (k1))";
+		conn.createStatement().execute(ddl);
+		String dml = "UPSERT INTO TIMEZONE_OFFSET_TEST (k1, dates, v1) VALUES (2, TO_DATE('2014-06-02 00:00:00'), null)";
+		conn.createStatement().execute(dml);
+		conn.commit();
+
+		ResultSet rs = conn.createStatement().executeQuery(
+				"SELECT k1, dates, TIMEZONE_OFFSET(v1, dates)"
+				+ "FROM TIMEZONE_OFFSET_TEST ORDER BY k1 ASC");
+
+		assertTrue(rs.next());
+		rs.getInt(3);
+		assertTrue(rs.wasNull());
+	}
+
+	@Test
+	public void dateParameterNull() throws Exception {
+		Connection conn = DriverManager.getConnection(getUrl());
+		String ddl = "CREATE TABLE IF NOT EXISTS TIMEZONE_OFFSET_TEST "
+				+ "(k1 INTEGER NOT NULL, dates DATE, v1 VARCHAR CONSTRAINT pk PRIMARY KEY (k1))";
+		conn.createStatement().execute(ddl);
+		String dml = "UPSERT INTO TIMEZONE_OFFSET_TEST (k1, dates, v1) VALUES (2, null, 'Asia/Aden')";
+		conn.createStatement().execute(dml);
+		conn.commit();
+
+		ResultSet rs = conn.createStatement().executeQuery(
+				"SELECT k1, dates, TIMEZONE_OFFSET(v1, dates)"
+				+ "FROM TIMEZONE_OFFSET_TEST ORDER BY k1 ASC");
+
+		assertTrue(rs.next());
+		rs.getInt(3);
+		assertTrue(rs.wasNull());
+	}
+
 }
