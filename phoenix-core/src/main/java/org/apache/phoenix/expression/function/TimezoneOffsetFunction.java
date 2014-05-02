@@ -42,7 +42,7 @@ import org.apache.phoenix.schema.tuple.Tuple;
 public class TimezoneOffsetFunction extends ScalarFunction {
 
     public static final String NAME = "TIMEZONE_OFFSET";
-    private static final int MILIS_TO_MINUTES = 60 * 1000;
+    private static final int MILLIS_TO_MINUTES = 60 * 1000;
     private final Map<String, TimeZone> cachedTimeZones = new HashMap<String, TimeZone>();
 
     public TimezoneOffsetFunction() {
@@ -80,7 +80,7 @@ public class TimezoneOffsetFunction extends ScalarFunction {
         int offset = cachedTimeZones.get(timezone)
                 .getOffset((Long) PDataType.LONG.toObject(ptr, children.get(1).getSortOrder()));
 
-        ptr.set(PDataType.INTEGER.toBytes(offset / MILIS_TO_MINUTES));
+        ptr.set(PDataType.INTEGER.toBytes(offset / MILLIS_TO_MINUTES));
         return true;
     }
 
