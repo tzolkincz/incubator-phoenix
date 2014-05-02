@@ -30,95 +30,98 @@ import org.apache.phoenix.schema.tuple.Tuple;
  * Convert string to bytes
  */
 @FunctionParseNode.BuiltInFunction(name = DecodeFunction.NAME, args = {
-    @FunctionParseNode.Argument(allowedTypes = {PDataType.VARCHAR}),
-    @FunctionParseNode.Argument(allowedTypes = {PDataType.VARCHAR}, isConstant=true)})
+	@FunctionParseNode.Argument(allowedTypes = {PDataType.VARCHAR}),
+	@FunctionParseNode.Argument(enumeration = "EncodeFormat")})
 public class DecodeFunction extends ScalarFunction {
 
-    public static final String NAME = "DECODE";
+	public static final String NAME = "DECODE";
 
-    public DecodeFunction() {
-    }
+	public DecodeFunction() {
+	}
 
-    public DecodeFunction(List<Expression> children) throws SQLException {
-        super(children);
-    }
+	public DecodeFunction(List<Expression> children) throws SQLException {
+		super(children);
+	}
 
-    @Override
-    public boolean evaluate(Tuple tuple, ImmutableBytesWritable ptr) {
-        Expression expression = getExpression();
-        if (!expression.evaluate(tuple, ptr)) {
-            return false;
-        }
-        if (ptr.getLength() == 0) {
-            return true; // expression was evaluated, but evaluated to null
-        }
+	@Override
+	public boolean evaluate(Tuple tuple, ImmutableBytesWritable ptr) {
+		Expression expression = getExpression();
+		if (!expression.evaluate(tuple, ptr)) {
+			return false;
+		}
+		if (ptr.getLength() == 0) {
+			return true; // expression was evaluated, but evaluated to null
+		}
 
-        PDataType type = expression.getDataType();
-        String hexStr = (String) type.toObject(ptr);
-        
-        Expression encodingExpression = getEncodingExpression();
-        if (!encodingExpression.evaluate(tuple, ptr)) {
-            return false;
-        }
+		PDataType type = expression.getDataType();
+		String stringToDecode = (String) type.toObject(ptr);
 
-        if (ptr.getLength() == 0) {
-            throw new IllegalDataException("Missing bytes encoding.");
-        }
+		Expression encodingExpression = getEncodingExpression();
+		if (!encodingExpression.evaluate(tuple, ptr)) {
+			return false;
+		}
 
-        type = encodingExpression.getDataType();
-        String encoding = ((String)type.toObject(ptr)).toLowerCase();
-        
-        byte out[];
-        if (encoding.equals("hex")) {
-        	out = decodeHex(hexStr);
-        } else {
-            throw new IllegalDataException("Unknown bytes encoding \"" + encoding + "\"");
-        }
+		if (ptr.getLength() == 0) {
+			throw new IllegalDataException("Missing bytes encoding.");
+		}
 
-        ptr.set(out);
+		type = encodingExpression.getDataType();
+		String encoding = ((String) type.toObject(ptr)).toUpperCase();
 
-        return true;
-    }
-    
-    private byte[] decodeHex(String hexStr) {
-    	 byte[] out = new byte[hexStr.length() / 2];
-         for (int i = 0; i < hexStr.length(); i = i + 2) {
-             try {
-                 out[i / 2] = (byte) Integer.parseInt(hexStr.substring(i, i + 2), 16);
-             } catch (NumberFormatException ex) {
-                 throw new IllegalDataException("Value " + hexStr.substring(i, i + 2) + " cannot be cast to hex number");
-             } catch (StringIndexOutOfBoundsException ex) {
-                 throw new IllegalDataException("Invalid value length, cannot cast to hex number (" + hexStr + ")");
-             }
-         }
-         return out;
-    }
+		byte out[];
 
-    @Override
-    public PDataType getDataType() {
-        return PDataType.VARBINARY;
-    }
+		EncodeFormat format = EncodeFormat.valueOf(encoding);
+		switch (format) {
+			case HEX:
+				out = decodeHex(stringToDecode);
+				break;
+			default:
+				throw new IllegalDataException("Unsupported encoding \"" + encoding + "\"");
+		}
+		ptr.set(out);
 
-    @Override
-    public boolean isNullable() {
-        return getExpression().isNullable();
-    }
+		return true;
+	}
 
-    private Expression getExpression() {
-        return children.get(0);
-    }
+	private byte[] decodeHex(String hexStr) {
+		byte[] out = new byte[hexStr.length() / 2];
+		for (int i = 0; i < hexStr.length(); i = i + 2) {
+			try {
+				out[i / 2] = (byte) Integer.parseInt(hexStr.substring(i, i + 2), 16);
+			} catch (NumberFormatException ex) {
+				throw new IllegalDataException("Value " + hexStr.substring(i, i + 2) + " cannot be cast to hex number");
+			} catch (StringIndexOutOfBoundsException ex) {
+				throw new IllegalDataException("Invalid value length, cannot cast to hex number (" + hexStr + ")");
+			}
+		}
+		return out;
+	}
 
-    private Expression getEncodingExpression() {
-        return children.get(1);
-    }
+	@Override
+	public PDataType getDataType() {
+		return PDataType.VARBINARY;
+	}
 
-    @Override
-    public String getName() {
-        return NAME;
-    }
+	@Override
+	public boolean isNullable() {
+		return getExpression().isNullable();
+	}
 
-    @Override
-    public Integer getMaxLength() {
-        return getExpression().getMaxLength();
-    }
+	private Expression getExpression() {
+		return children.get(0);
+	}
+
+	private Expression getEncodingExpression() {
+		return children.get(1);
+	}
+
+	@Override
+	public String getName() {
+		return NAME;
+	}
+
+	@Override
+	public Integer getMaxLength() {
+		return getExpression().getMaxLength();
+	}
 }
