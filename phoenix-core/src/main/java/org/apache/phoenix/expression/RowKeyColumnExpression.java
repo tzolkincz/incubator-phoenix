@@ -114,6 +114,7 @@ public class RowKeyColumnExpression  extends ColumnExpression {
                 type.coerceBytes(ptr, fromType, getSortOrder(), getSortOrder());
             } else {
                 ptr.set(ByteUtil.EMPTY_BYTE_ARRAY);
+                return false;
             }
             return true;
         }
