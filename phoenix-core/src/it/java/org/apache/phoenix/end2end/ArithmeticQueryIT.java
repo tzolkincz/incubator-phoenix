@@ -234,6 +234,36 @@ public class ArithmeticQueryIT extends BaseHBaseManagedTimeIT {
     }
 
     @Test
+    public void testDoubleAveraging() throws Exception {
+        Properties props = new Properties(TEST_PROPERTIES);
+        Connection conn = DriverManager.getConnection(getUrl(), props);
+        conn.setAutoCommit(false);
+        try {
+            String ddl = "CREATE TABLE testDoubleArithmetic" + 
+                    "  (pk VARCHAR NOT NULL PRIMARY KEY, col1 DOUBLE)";
+            createTestTable(getUrl(), ddl);
+            
+            
+            String query = "UPSERT INTO testDoubleArithmetic(pk, col1) VALUES('1', 0.00002792783736983)";
+            conn.prepareStatement(query).execute();
+
+            query = "UPSERT INTO testDoubleArithmetic(pk, col1) VALUES('2', 0.000006373648125914301)";
+            conn.prepareStatement(query).execute();
+            conn.commit();
+//            CAST (col1 as DECIMAL(2,10) )
+            query = "SELECT AVG( CAST (col1 as DECIMAL(10,10)) )  FROM testDoubleArithmetic";
+            //query = "SELECT SUM(col1)/COUNT(col1) FROM testDoubleArithmetic";
+            PreparedStatement stmt = conn.prepareStatement(query);
+            ResultSet rs = stmt.executeQuery();
+            assertTrue(rs.next());
+            Double result = rs.getDouble(1);
+            
+            assertEquals(new Double("1.715074274787215E-5"), result);
+        } finally {
+            conn.close();
+        }
+    }
+    @Test
     public void testDecimalAveraging() throws Exception {
         Properties props = new Properties(TEST_PROPERTIES);
         Connection conn = DriverManager.getConnection(getUrl(), props);
