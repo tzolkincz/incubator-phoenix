@@ -22,27 +22,29 @@ import org.apache.phoenix.expression.LiteralExpression;
 import org.apache.phoenix.expression.aggregator.Aggregator;
 import org.apache.phoenix.expression.aggregator.FirstLastValueBaseClientAggregator;
 import org.apache.phoenix.expression.aggregator.FirstLastValueServerAggregator;
-import org.apache.phoenix.parse.FirstValueAggregateParseNode;
+import org.apache.phoenix.parse.NthValueAggregateParseNode;
 import org.apache.phoenix.parse.FunctionParseNode;
 import org.apache.phoenix.schema.PDataType;
 
 /**
- * Built-in function for FIRST_VALUE(<expression>) WITHIN GROUP (ORDER BY <expression> ASC/DESC) aggregate
- * function
+ * Built-in function for NTH_VALUE(<expression>, <expression>) WITHIN GROUP (ORDER BY <expression> ASC/DESC)
+ * aggregate function
  *
  */
-@FunctionParseNode.BuiltInFunction(name = FirstValueFunction.NAME, nodeClass = FirstValueAggregateParseNode.class, args = {
+@FunctionParseNode.BuiltInFunction(name = NthValueFunction.NAME, nodeClass = NthValueAggregateParseNode.class, args = {
 	@FunctionParseNode.Argument(),
 	@FunctionParseNode.Argument(allowedTypes = {PDataType.BOOLEAN}, isConstant = true),
-	@FunctionParseNode.Argument()})
-public class FirstValueFunction extends FirstLastValueBaseFunction {
+	@FunctionParseNode.Argument(),
+	@FunctionParseNode.Argument(allowedTypes = {PDataType.INTEGER}, isConstant = true)})
+public class NthValueFunction extends FirstLastValueBaseFunction {
 
-	public static final String NAME = "FIRST_VALUE";
+	public static final String NAME = "NTH_VALUE";
+	private int offset;
 
-	public FirstValueFunction() {
+	public NthValueFunction() {
 	}
 
-	public FirstValueFunction(List<Expression> childExpressions, CountAggregateFunction delegate) {
+	public NthValueFunction(List<Expression> childExpressions, CountAggregateFunction delegate) {
 		super(childExpressions, delegate);
 	}
 
@@ -50,8 +52,10 @@ public class FirstValueFunction extends FirstLastValueBaseFunction {
 	public Aggregator newServerAggregator(Configuration conf) {
 		FirstLastValueServerAggregator aggregator = new FirstLastValueServerAggregator();
 
+		offset = ((Number) ((LiteralExpression) children.get(3)).getValue()).intValue();
 		boolean order = (Boolean) ((LiteralExpression) children.get(1)).getValue();
-		aggregator.init(children, order, 0);
+
+		aggregator.init(children, order, offset);
 
 		return aggregator;
 	}
@@ -59,8 +63,14 @@ public class FirstValueFunction extends FirstLastValueBaseFunction {
 	@Override
 	public Aggregator newClientAggregator() {
 		FirstLastValueBaseClientAggregator aggregator = new FirstLastValueBaseClientAggregator();
-		aggregator.init(0);
+
+		if (children.size() < 3) {
+			aggregator.init(offset);
+		} else {
+			aggregator.init(((Number) ((LiteralExpression) children.get(3)).getValue()).intValue());
+		}
 
 		return aggregator;
 	}
+
 }

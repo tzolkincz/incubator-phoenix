@@ -18,7 +18,7 @@
 package org.apache.phoenix.util;
 
 /**
- * Container for data transfer between server and client aggregation (FIRST|LAST VALUE functions)
+ * Container for data transfer between server and client aggregation (FIRST|LAST|NTH)_VALUE functions
  *
  */
 public class FirstLastValueDataContainer {
@@ -28,9 +28,7 @@ public class FirstLastValueDataContainer {
 	protected byte[] value;
 	protected boolean isAscending;
 
-	// @TODO commpression
 	public void setBytesMessage(byte[] msg) {
-
 		useCompression = false;
 		if (msg[0] == (byte) 1) {
 			useCompression = true;
@@ -84,8 +82,6 @@ public class FirstLastValueDataContainer {
 	}
 
 	public byte[] getBytesMessage() {
-		//@TODO bool values to bits
-
 		/*
 		 MESSAGE STRUCTURE:
 

@@ -36,7 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Base server aggregator for FIRST|LAST VALUE functions
+ * Base server aggregator for (FIRST|LAST|NTH)_VALUE functions
  *
  */
 public class FirstLastValueServerAggregator extends BaseAggregator {
@@ -62,8 +62,6 @@ public class FirstLastValueServerAggregator extends BaseAggregator {
 		topValues.clear();
 		offset = -1;
 		useOffset = false;
-
-		super.reset();
 	}
 
 	@Override
@@ -71,20 +69,29 @@ public class FirstLastValueServerAggregator extends BaseAggregator {
 		return super.getSize() + SizedUtil.IMMUTABLE_BYTES_WRITABLE_SIZE;
 	}
 
+	private Expression getOrderByColumnChild() {
+		return children.get(0);
+	}
+
+	private Expression getDataColumnChild() {
+		return children.get(2);
+	}
+
 	@Override
 	public void aggregate(Tuple tuple, ImmutableBytesWritable ptr) {
-
 		//set pointer to ordering by field
-		children.get(1).evaluate(tuple, ptr);
+		getOrderByColumnChild().evaluate(tuple, ptr);
 		byte[] currentOrder = ptr.copyBytes();
 
-		children.get(0).evaluate(tuple, ptr);
+		if (!getDataColumnChild().evaluate(tuple, ptr)) {
+			return;
+		}
 
 		if (useOffset) {
-			boolean add = false;
+			boolean addFlag = false;
 			if (topValues.size() < offset) {
 				try {
-					add = true;
+					addFlag = true;
 				} catch (Exception e) {
 					logger.error(e.getMessage());
 				}
@@ -93,17 +100,17 @@ public class FirstLastValueServerAggregator extends BaseAggregator {
 					byte[] lowestKey = topValues.lastKey();
 					if (Bytes.compareTo(currentOrder, lowestKey) < 0) {
 						topValues.remove(lowestKey);
-						add = true;
+						addFlag = true;
 					}
 				} else { //desc
 					byte[] highestKey = topValues.firstKey();
 					if (Bytes.compareTo(currentOrder, highestKey) > 0) {
 						topValues.remove(highestKey);
-						add = true;
+						addFlag = true;
 					}
 				}
 			}
-			if (add) {
+			if (addFlag) {
 				//invert bytes if is SortOrder set
 				if (hasValueDescSortOrder) {
 					topValues.put(currentOrder, SortOrder.invert(ptr.get(), ptr.getOffset(), ptr.getLength()));
@@ -149,7 +156,6 @@ public class FirstLastValueServerAggregator extends BaseAggregator {
 
 	@Override
 	public boolean evaluate(Tuple tuple, ImmutableBytesWritable ptr) {
-
 		if (useOffset) {
 			if (topValues.size() == 0) {
 				return false;
@@ -195,10 +201,10 @@ public class FirstLastValueServerAggregator extends BaseAggregator {
 		}
 
 		//set order if modified
-		if (children.get(0).getSortOrder() == SortOrder.DESC) {
+		if (getDataColumnChild().getSortOrder() == SortOrder.DESC) {
 			hasValueDescSortOrder = true;
 		}
-		if (children.get(1).getSortOrder() == SortOrder.DESC) {
+		if (getOrderByColumnChild().getSortOrder() == SortOrder.DESC) {
 			this.isAscending = !isAscending;
 		} else {
 			this.isAscending = isAscending;

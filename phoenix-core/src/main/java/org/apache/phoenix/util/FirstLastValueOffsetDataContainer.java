@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Offset implementation for data container for transfer data between server and client aggregation
- * FIRST|LAST VALUE functions
+ * (FIRST|LAST|NTH)_VALUE functions
  *
  */
 public class FirstLastValueOffsetDataContainer extends FirstLastValueDataContainer {
@@ -54,7 +54,6 @@ public class FirstLastValueOffsetDataContainer extends FirstLastValueDataContain
 	}
 
 	public byte[] getPayload() throws IOException {
-
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
 		bos.write(useCompression ? (byte) 1 : (byte) 0);
@@ -78,20 +77,15 @@ public class FirstLastValueOffsetDataContainer extends FirstLastValueDataContain
 	}
 
 	public void setPayload(byte[] payload) throws IOException {
-
 		ByteArrayInputStream bis = new ByteArrayInputStream(payload);
 
 		useCompression = bis.read() != 0;
 		isAscending = bis.read() != 0;
 
-		byte[] foo = new byte[4];
-		for (int i = 0; i < foo.length; i++) {
-			byte[] a = new byte[1];
-			bis.read(a);
-			foo[i] = a[0];
-		}
+		byte[] offsetBytes = new byte[4];
+		bis.read(offsetBytes);
 
-		offset = fromByteArray(foo);
+		offset = fromByteArray(offsetBytes);
 
 		ObjectInput in = null;
 		try {

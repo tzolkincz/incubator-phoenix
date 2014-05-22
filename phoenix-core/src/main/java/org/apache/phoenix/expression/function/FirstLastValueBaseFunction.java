@@ -19,10 +19,11 @@ package org.apache.phoenix.expression.function;
 import java.util.List;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.phoenix.expression.Expression;
+import org.apache.phoenix.schema.PDataType;
 import org.apache.phoenix.schema.tuple.Tuple;
 
 /**
- * FIRST|LAST VALUE build in function interface
+ * (FIRST|LAST|NTH)_VALUE build in function interface
  *
  */
 abstract public class FirstLastValueBaseFunction extends DelegateConstantToCountAggregateFunction {
@@ -51,5 +52,10 @@ abstract public class FirstLastValueBaseFunction extends DelegateConstantToCount
 	@Override
 	public String getName() {
 		return NAME;
+	}
+
+	@Override
+	public PDataType getDataType() {
+		return children.get(2).getDataType();
 	}
 }

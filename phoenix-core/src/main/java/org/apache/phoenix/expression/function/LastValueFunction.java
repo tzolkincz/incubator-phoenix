@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.phoenix.expression.function;
 
 import java.util.List;
@@ -28,12 +27,14 @@ import org.apache.phoenix.parse.LastValueAggregateParseNode;
 import org.apache.phoenix.schema.PDataType;
 
 /**
- * LAST_VALUE build in function definition
+ * Built-in function for LAST_VALUE(<expression>) WITHIN GROUP (ORDER BY <expression> ASC/DESC) aggregate
+ * function
+ *
  */
 @FunctionParseNode.BuiltInFunction(name = LastValueFunction.NAME, nodeClass = LastValueAggregateParseNode.class, args = {
 	@FunctionParseNode.Argument(),
-	@FunctionParseNode.Argument(),
-    @FunctionParseNode.Argument(allowedTypes={PDataType.INTEGER}, isConstant=true, defaultValue="0")})
+	@FunctionParseNode.Argument(allowedTypes = {PDataType.BOOLEAN}, isConstant = true),
+	@FunctionParseNode.Argument()})
 public class LastValueFunction extends FirstLastValueBaseFunction {
 
 	public static final String NAME = "LAST_VALUE";
@@ -48,7 +49,10 @@ public class LastValueFunction extends FirstLastValueBaseFunction {
 	@Override
 	public Aggregator newServerAggregator(Configuration conf) {
 		FirstLastValueServerAggregator aggregator = new FirstLastValueServerAggregator();
-		aggregator.init(children, false, ((Number) ((LiteralExpression) children.get(2)).getValue()).intValue());
+
+		//invert order for LAST_BY function cause it is inverted version of FIRST_BY
+		boolean order = !(Boolean) ((LiteralExpression) children.get(1)).getValue();
+		aggregator.init(children, order, 0);
 
 		return aggregator;
 	}
@@ -57,12 +61,9 @@ public class LastValueFunction extends FirstLastValueBaseFunction {
 	public Aggregator newClientAggregator() {
 
 		FirstLastValueBaseClientAggregator aggregator = new FirstLastValueBaseClientAggregator();
-		if (children.size() < 3) {
-			aggregator.init(children, 0);
-		} else {
-			aggregator.init(children, ((Number) ((LiteralExpression) children.get(2)).getValue()).intValue());
-		}
+		aggregator.init(0);
 
 		return aggregator;
 	}
+
 }

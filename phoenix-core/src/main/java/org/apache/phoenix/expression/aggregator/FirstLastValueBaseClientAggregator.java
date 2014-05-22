@@ -18,9 +18,6 @@
 package org.apache.phoenix.expression.aggregator;
 
 import java.io.IOException;
-import org.apache.phoenix.expression.Expression;
-import org.apache.phoenix.expression.function.LengthFunction;
-import org.apache.phoenix.parse.FunctionParseNode;
 import org.apache.phoenix.schema.PDataType;
 import org.apache.phoenix.schema.tuple.SingleKeyValueTuple;
 import org.apache.phoenix.schema.tuple.Tuple;
@@ -28,7 +25,6 @@ import org.apache.phoenix.util.BinarySerializableComparator;
 import org.apache.phoenix.util.ByteUtil;
 import org.apache.phoenix.util.FirstLastValueDataContainer;
 import org.apache.phoenix.util.FirstLastValueOffsetDataContainer;
-import java.util.List;
 import java.util.Set;
 import java.util.TreeMap;
 import org.apache.hadoop.hbase.filter.BinaryComparator;
@@ -38,22 +34,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Base client aggregator for FIRST|LAST VALUE functions
+ * Base client aggregator for (FIRST|LAST|NTH)_VALUE functions
  *
  */
 public class FirstLastValueBaseClientAggregator extends BaseAggregator {
 
 	private static final Logger logger = LoggerFactory.getLogger(FirstLastValueBaseClientAggregator.class);
-	protected final ImmutableBytesWritable value = new ImmutableBytesWritable(ByteUtil.EMPTY_BYTE_ARRAY);
-	protected List<Expression> children;
 	protected boolean useOffset = false;
 	protected int offset = -1;
-	protected int selectOffset = -1;
 	protected BinaryComparator topOrder = new BinaryComparator(ByteUtil.EMPTY_BYTE_ARRAY);
 	protected byte[] topValue = null;
 	protected TreeMap<byte[], byte[]> topValues = new TreeMap<byte[], byte[]>(new BinarySerializableComparator());
 	protected boolean isAscending;
-	private final PDataType dataType = PDataType.VARBINARY;
 
 	public FirstLastValueBaseClientAggregator() {
 		super(SortOrder.getDefault());
@@ -61,12 +53,9 @@ public class FirstLastValueBaseClientAggregator extends BaseAggregator {
 
 	@Override
 	public void reset() {
-		value.set(ByteUtil.EMPTY_BYTE_ARRAY);
 		topOrder = new BinaryComparator(ByteUtil.EMPTY_BYTE_ARRAY);
 		topValue = null;
 		topValues.clear();
-
-		super.reset();
 	}
 
 	@Override
@@ -90,6 +79,8 @@ public class FirstLastValueBaseClientAggregator extends BaseAggregator {
 					return true;
 				}
 			}
+
+			//not enought values to return Nth
 			return false;
 		}
 
@@ -107,7 +98,6 @@ public class FirstLastValueBaseClientAggregator extends BaseAggregator {
 			FirstLastValueOffsetDataContainer payload = new FirstLastValueOffsetDataContainer();
 			try {
 				payload.setPayload(ptr.copyBytes());
-
 				topValues.putAll(payload.getData());
 				isAscending = payload.getIsAscending();
 			} catch (IOException ex) {
@@ -145,14 +135,13 @@ public class FirstLastValueBaseClientAggregator extends BaseAggregator {
 
 	@Override
 	public PDataType getDataType() {
-		return dataType;
+		return PDataType.VARBINARY;
 	}
 
-	public void init(List<Expression> children, int offset) {
+	public void init(int offset) {
 		if (offset != 0) {
 			useOffset = true;
 			this.offset = offset;
 		}
-		this.children = children;
 	}
 }
