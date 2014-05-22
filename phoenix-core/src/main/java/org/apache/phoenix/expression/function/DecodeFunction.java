@@ -27,7 +27,9 @@ import org.apache.phoenix.schema.PDataType;
 import org.apache.phoenix.schema.tuple.Tuple;
 
 /**
- * Convert string to bytes
+ * Convert string to bytes.
+ * Syntax: DECODE('A13B0376', 'hex')
+ *
  */
 @FunctionParseNode.BuiltInFunction(name = DecodeFunction.NAME, args = {
 	@FunctionParseNode.Argument(allowedTypes = {PDataType.VARCHAR}),

@@ -49,7 +49,8 @@ public class DecodeFunctionIT extends BaseHBaseManagedTimeIT {
 		ps.execute();
 		conn.commit();
 
-		ResultSet rs = conn.createStatement().executeQuery("SELECT * FROM test_table WHERE some_column = DECODE('000000008512af277ffffff8', 'hex')");
+		ResultSet rs = conn.createStatement().executeQuery(
+				"SELECT * FROM test_table WHERE some_column = DECODE('000000008512af277ffffff8', 'hex')");
 		assertTrue(rs.next());
 	}
 
@@ -68,7 +69,8 @@ public class DecodeFunctionIT extends BaseHBaseManagedTimeIT {
 		ps.execute();
 		conn.commit();
 
-		ResultSet rs = conn.createStatement().executeQuery("SELECT * FROM test_table WHERE some_column = DECODE('000000008512af277ffffff8', 'HEX')");
+		ResultSet rs = conn.createStatement().executeQuery(
+				"SELECT * FROM test_table WHERE some_column = DECODE('000000008512af277ffffff8', 'HEX')");
 		assertTrue(rs.next());
 	}
 
@@ -80,7 +82,8 @@ public class DecodeFunctionIT extends BaseHBaseManagedTimeIT {
 		conn.createStatement().execute(ddl);
 
 		try {
-			conn.createStatement().executeQuery("SELECT * FROM test_table WHERE some_column = DECODE('zzxxuuyyzzxxuuyy', 'hex')");
+			conn.createStatement().executeQuery(
+					"SELECT * FROM test_table WHERE some_column = DECODE('zzxxuuyyzzxxuuyy', 'hex')");
 		} catch (IllegalDataException e) {
 			assertTrue(true);
 			return;
@@ -128,7 +131,8 @@ public class DecodeFunctionIT extends BaseHBaseManagedTimeIT {
 		conn.createStatement().execute(ddl);
 
 		try {
-			conn.createStatement().executeQuery("SELECT * FROM test_table WHERE some_column = DECODE('8', 'someNonexistFormat')");
+			conn.createStatement().executeQuery(
+					"SELECT * FROM test_table WHERE some_column = DECODE('8', 'someNonexistFormat')");
 		} catch (SQLException e) {
 			assertTrue(true);
 			return;
