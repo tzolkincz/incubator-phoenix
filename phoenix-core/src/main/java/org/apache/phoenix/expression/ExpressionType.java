@@ -156,7 +156,7 @@ public enum ExpressionType {
     ArrayConstructorExpression(ArrayConstructorExpression.class),
     SQLViewTypeFunction(SQLViewTypeFunction.class),
     ExternalSqlTypeIdFunction(ExternalSqlTypeIdFunction.class),
-    HexToBytesFunction(HexToBytesFunction.class),
+    DecodeFunction(DecodeFunction.class),
     TimezoneOffsetFunction(TimezoneOffsetFunction.class);
     ExpressionType(Class<? extends Expression> clazz) {
         this.clazz = clazz;
