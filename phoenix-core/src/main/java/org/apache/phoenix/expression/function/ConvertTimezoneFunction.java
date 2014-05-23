@@ -30,72 +30,72 @@ import org.apache.phoenix.schema.PDataType;
 import org.apache.phoenix.schema.tuple.Tuple;
 
 /**
- * Build in function CONVERT_TZ(date, 'timezone_from', 'timezone_to).
- * Convert date from one timezone to another
+ * Build in function CONVERT_TZ(date, 'timezone_from', 'timezone_to). Convert date from one timezone to
+ * another
  *
  */
 @FunctionParseNode.BuiltInFunction(name = ConvertTimezoneFunction.NAME, args = {
-	@FunctionParseNode.Argument(allowedTypes = {PDataType.DATE}),
-	@FunctionParseNode.Argument(allowedTypes = {PDataType.VARCHAR}),
-	@FunctionParseNode.Argument(allowedTypes = {PDataType.VARCHAR})})
+    @FunctionParseNode.Argument(allowedTypes = {PDataType.DATE}),
+    @FunctionParseNode.Argument(allowedTypes = {PDataType.VARCHAR}),
+    @FunctionParseNode.Argument(allowedTypes = {PDataType.VARCHAR})})
 public class ConvertTimezoneFunction extends ScalarFunction {
 
-	public static final String NAME = "CONVERT_TZ";
-	private final Map<String, TimeZone> cachedTimeZones = new HashMap<String, TimeZone>();
+    public static final String NAME = "CONVERT_TZ";
+    private final Map<String, TimeZone> cachedTimeZones = new HashMap<String, TimeZone>();
 
-	public ConvertTimezoneFunction() {
-	}
+    public ConvertTimezoneFunction() {
+    }
 
-	public ConvertTimezoneFunction(List<Expression> children) throws SQLException {
-		super(children);
-	}
+    public ConvertTimezoneFunction(List<Expression> children) throws SQLException {
+        super(children);
+    }
 
-	@Override
-	public String getName() {
-		return NAME;
-	}
+    @Override
+    public String getName() {
+        return NAME;
+    }
 
-	@Override
-	public boolean evaluate(Tuple tuple, ImmutableBytesWritable ptr) {
-		if (!children.get(0).evaluate(tuple, ptr)) {
-			return false;
-		}
+    @Override
+    public boolean evaluate(Tuple tuple, ImmutableBytesWritable ptr) {
+        if (!children.get(0).evaluate(tuple, ptr)) {
+            return false;
+        }
 
-		Date dateo = (Date) PDataType.DATE.toObject(ptr, children.get(0).getSortOrder());
-		Long date = dateo.getTime();
+        Date dateo = (Date) PDataType.DATE.toObject(ptr, children.get(0).getSortOrder());
+        Long date = dateo.getTime();
 
-		if (!children.get(1).evaluate(tuple, ptr)) {
-			return false;
-		}
-		TimeZone timezoneFrom = getTimezoneFromCache(Bytes.toString(ptr.get(), ptr.getOffset(), ptr.getLength()));
+        if (!children.get(1).evaluate(tuple, ptr)) {
+            return false;
+        }
+        TimeZone timezoneFrom = getTimezoneFromCache(Bytes.toString(ptr.get(), ptr.getOffset(), ptr.getLength()));
 
-		if (!children.get(2).evaluate(tuple, ptr)) {
-			return false;
-		}
-		TimeZone timezoneTo = TimeZone.getTimeZone(Bytes.toString(ptr.get(), ptr.getOffset(), ptr.getLength()));
+        if (!children.get(2).evaluate(tuple, ptr)) {
+            return false;
+        }
+        TimeZone timezoneTo = TimeZone.getTimeZone(Bytes.toString(ptr.get(), ptr.getOffset(), ptr.getLength()));
 
-		long dateInUtc = date - timezoneFrom.getOffset(date);
-		long dateInTo = dateInUtc + timezoneTo.getOffset(dateInUtc);
+        long dateInUtc = date - timezoneFrom.getOffset(date);
+        long dateInTo = dateInUtc + timezoneTo.getOffset(dateInUtc);
 
-		ptr.set(PDataType.DATE.toBytes(new Date(dateInTo)));
+        ptr.set(PDataType.DATE.toBytes(new Date(dateInTo)));
 
-		return true;
-	}
+        return true;
+    }
 
-	private TimeZone getTimezoneFromCache(String timezone) throws IllegalDataException {
-		if (!cachedTimeZones.containsKey(timezone)) {
-			TimeZone tz = TimeZone.getTimeZone(timezone);
-			if (!tz.getID().equals(timezone)) {
-				throw new IllegalDataException("Invalid timezone " + timezone);
-			}
-			cachedTimeZones.put(timezone, tz);
-			return tz;
-		}
-		return cachedTimeZones.get(timezone);
-	}
+    private TimeZone getTimezoneFromCache(String timezone) throws IllegalDataException {
+        if (!cachedTimeZones.containsKey(timezone)) {
+            TimeZone tz = TimeZone.getTimeZone(timezone);
+            if (!tz.getID().equals(timezone)) {
+                throw new IllegalDataException("Invalid timezone " + timezone);
+            }
+            cachedTimeZones.put(timezone, tz);
+            return tz;
+        }
+        return cachedTimeZones.get(timezone);
+    }
 
-	@Override
-	public PDataType getDataType() {
-		return PDataType.DATE;
-	}
+    @Override
+    public PDataType getDataType() {
+        return PDataType.DATE;
+    }
 }
