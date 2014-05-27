@@ -1,11 +1,13 @@
 /*
- * Copyright 2014 Apache Software Foundation.
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -32,45 +34,45 @@ import org.apache.phoenix.schema.PDataType;
  *
  */
 @FunctionParseNode.BuiltInFunction(name = NthValueFunction.NAME, nodeClass = NthValueAggregateParseNode.class, args = {
-	@FunctionParseNode.Argument(),
-	@FunctionParseNode.Argument(allowedTypes = {PDataType.BOOLEAN}, isConstant = true),
-	@FunctionParseNode.Argument(),
-	@FunctionParseNode.Argument(allowedTypes = {PDataType.INTEGER}, isConstant = true)})
+    @FunctionParseNode.Argument(),
+    @FunctionParseNode.Argument(allowedTypes = {PDataType.BOOLEAN}, isConstant = true),
+    @FunctionParseNode.Argument(),
+    @FunctionParseNode.Argument(allowedTypes = {PDataType.INTEGER}, isConstant = true)})
 public class NthValueFunction extends FirstLastValueBaseFunction {
 
-	public static final String NAME = "NTH_VALUE";
-	private int offset;
+    public static final String NAME = "NTH_VALUE";
+    private int offset;
 
-	public NthValueFunction() {
-	}
+    public NthValueFunction() {
+    }
 
-	public NthValueFunction(List<Expression> childExpressions, CountAggregateFunction delegate) {
-		super(childExpressions, delegate);
-	}
+    public NthValueFunction(List<Expression> childExpressions, CountAggregateFunction delegate) {
+        super(childExpressions, delegate);
+    }
 
-	@Override
-	public Aggregator newServerAggregator(Configuration conf) {
-		FirstLastValueServerAggregator aggregator = new FirstLastValueServerAggregator();
+    @Override
+    public Aggregator newServerAggregator(Configuration conf) {
+        FirstLastValueServerAggregator aggregator = new FirstLastValueServerAggregator();
 
-		offset = ((Number) ((LiteralExpression) children.get(3)).getValue()).intValue();
-		boolean order = (Boolean) ((LiteralExpression) children.get(1)).getValue();
+        offset = ((Number) ((LiteralExpression) children.get(3)).getValue()).intValue();
+        boolean order = (Boolean) ((LiteralExpression) children.get(1)).getValue();
 
-		aggregator.init(children, order, offset);
+        aggregator.init(children, order, offset);
 
-		return aggregator;
-	}
+        return aggregator;
+    }
 
-	@Override
-	public Aggregator newClientAggregator() {
-		FirstLastValueBaseClientAggregator aggregator = new FirstLastValueBaseClientAggregator();
+    @Override
+    public Aggregator newClientAggregator() {
+        FirstLastValueBaseClientAggregator aggregator = new FirstLastValueBaseClientAggregator();
 
-		if (children.size() < 3) {
-			aggregator.init(offset);
-		} else {
-			aggregator.init(((Number) ((LiteralExpression) children.get(3)).getValue()).intValue());
-		}
+        if (children.size() < 3) {
+            aggregator.init(offset);
+        } else {
+            aggregator.init(((Number) ((LiteralExpression) children.get(3)).getValue()).intValue());
+        }
 
-		return aggregator;
-	}
+        return aggregator;
+    }
 
 }

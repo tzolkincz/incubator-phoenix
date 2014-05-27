@@ -20,10 +20,7 @@ package org.apache.phoenix.expression.aggregator;
 import org.apache.phoenix.expression.Expression;
 import org.apache.phoenix.schema.PDataType;
 import org.apache.phoenix.schema.tuple.Tuple;
-import org.apache.phoenix.util.BinarySerializableComparator;
 import org.apache.phoenix.util.ByteUtil;
-import org.apache.phoenix.util.FirstLastValueDataContainer;
-import org.apache.phoenix.util.FirstLastValueOffsetDataContainer;
 import org.apache.phoenix.util.SizedUtil;
 import java.io.IOException;
 import java.util.List;
@@ -32,6 +29,7 @@ import org.apache.hadoop.hbase.filter.BinaryComparator;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.SortOrder;
+import org.apache.phoenix.util.FirstLastNthValueDataContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,174 +39,168 @@ import org.slf4j.LoggerFactory;
  */
 public class FirstLastValueServerAggregator extends BaseAggregator {
 
-	private static final Logger logger = LoggerFactory.getLogger(FirstLastValueServerAggregator.class);
-	protected List<Expression> children;
-	protected BinaryComparator topOrder = new BinaryComparator(ByteUtil.EMPTY_BYTE_ARRAY);
-	protected byte[] topValue;
-	protected boolean useOffset = false;
-	protected int offset = -1;
-	protected TreeMap<byte[], byte[]> topValues = new TreeMap<byte[], byte[]>(new BinarySerializableComparator());
-	protected boolean isAscending;
-	protected boolean hasValueDescSortOrder = false;
+    private static final Logger logger = LoggerFactory.getLogger(FirstLastValueServerAggregator.class);
+    protected List<Expression> children;
+    protected BinaryComparator topOrder = new BinaryComparator(ByteUtil.EMPTY_BYTE_ARRAY);
+    protected byte[] topValue;
+    protected boolean useOffset = false;
+    protected int offset = -1;
+    protected TreeMap<byte[], byte[]> topValues = new TreeMap<byte[], byte[]>(new Bytes.ByteArrayComparator());
+    protected boolean isAscending;
+    protected boolean hasValueDescSortOrder = false;
+    protected Expression orderByColumn;
+    protected Expression dataColumn;
 
-	public FirstLastValueServerAggregator() {
-		super(SortOrder.getDefault());
-	}
+    public FirstLastValueServerAggregator() {
+        super(SortOrder.getDefault());
+    }
 
-	@Override
-	public void reset() {
-		topOrder = new BinaryComparator(ByteUtil.EMPTY_BYTE_ARRAY);
-		topValue = null;
-		topValues.clear();
-		offset = -1;
-		useOffset = false;
-	}
+    @Override
+    public void reset() {
+        topOrder = new BinaryComparator(ByteUtil.EMPTY_BYTE_ARRAY);
+        topValue = null;
+        topValues.clear();
+        offset = -1;
+        useOffset = false;
+    }
 
-	@Override
-	public int getSize() {
-		return super.getSize() + SizedUtil.IMMUTABLE_BYTES_WRITABLE_SIZE;
-	}
+    @Override
+    public int getSize() {
+        return super.getSize() + SizedUtil.IMMUTABLE_BYTES_WRITABLE_SIZE;
+    }
 
-	private Expression getOrderByColumnChild() {
-		return children.get(0);
-	}
+    @Override
+    public void aggregate(Tuple tuple, ImmutableBytesWritable ptr) {
+        //set pointer to ordering by field
+        orderByColumn.evaluate(tuple, ptr);
+        byte[] currentOrder = ptr.copyBytes();
 
-	private Expression getDataColumnChild() {
-		return children.get(2);
-	}
+        if (!dataColumn.evaluate(tuple, ptr)) {
+            return;
+        }
 
-	@Override
-	public void aggregate(Tuple tuple, ImmutableBytesWritable ptr) {
-		//set pointer to ordering by field
-		getOrderByColumnChild().evaluate(tuple, ptr);
-		byte[] currentOrder = ptr.copyBytes();
+        if (useOffset) {
+            boolean addFlag = false;
+            if (topValues.size() < offset) {
+                try {
+                    addFlag = true;
+                } catch (Exception e) {
+                    logger.error(e.getMessage());
+                }
+            } else {
+                if (isAscending) {
+                    byte[] lowestKey = topValues.lastKey();
+                    if (Bytes.compareTo(currentOrder, lowestKey) < 0) {
+                        topValues.remove(lowestKey);
+                        addFlag = true;
+                    }
+                } else { //desc
+                    byte[] highestKey = topValues.firstKey();
+                    if (Bytes.compareTo(currentOrder, highestKey) > 0) {
+                        topValues.remove(highestKey);
+                        addFlag = true;
+                    }
+                }
+            }
+            if (addFlag) {
+                //invert bytes if is SortOrder set
+                if (hasValueDescSortOrder) {
+                    topValues.put(currentOrder, SortOrder.invert(ptr.get(), ptr.getOffset(), ptr.getLength()));
+                } else {
+                    topValues.put(currentOrder, ptr.copyBytes());
+                }
+            }
+        } else {
+            boolean isHigher;
+            if (isAscending) {
+                isHigher = topOrder.compareTo(currentOrder) > 0;
+            } else {
+                isHigher = topOrder.compareTo(currentOrder) < 0;//desc
+            }
+            if (topOrder.getValue().length < 1 || isHigher) {
+                if (hasValueDescSortOrder) {
+                    topValue = SortOrder.invert(ptr.get(), ptr.getOffset(), ptr.getLength());
+                } else {
+                    topValue = ptr.copyBytes();
+                }
 
-		if (!getDataColumnChild().evaluate(tuple, ptr)) {
-			return;
-		}
+                topOrder = new BinaryComparator(currentOrder);
+            }
+        }
 
-		if (useOffset) {
-			boolean addFlag = false;
-			if (topValues.size() < offset) {
-				try {
-					addFlag = true;
-				} catch (Exception e) {
-					logger.error(e.getMessage());
-				}
-			} else {
-				if (isAscending) {
-					byte[] lowestKey = topValues.lastKey();
-					if (Bytes.compareTo(currentOrder, lowestKey) < 0) {
-						topValues.remove(lowestKey);
-						addFlag = true;
-					}
-				} else { //desc
-					byte[] highestKey = topValues.firstKey();
-					if (Bytes.compareTo(currentOrder, highestKey) > 0) {
-						topValues.remove(highestKey);
-						addFlag = true;
-					}
-				}
-			}
-			if (addFlag) {
-				//invert bytes if is SortOrder set
-				if (hasValueDescSortOrder) {
-					topValues.put(currentOrder, SortOrder.invert(ptr.get(), ptr.getOffset(), ptr.getLength()));
-				} else {
-					topValues.put(currentOrder, ptr.copyBytes());
-				}
-			}
-		} else {
-			boolean isHigher;
-			if (isAscending) {
-				isHigher = topOrder.compareTo(currentOrder) > 0;
-			} else {
-				isHigher = topOrder.compareTo(currentOrder) < 0;//desc
-			}
-			if (topOrder.getValue().length < 1 || isHigher) {
-				if (hasValueDescSortOrder) {
-					topValue = SortOrder.invert(ptr.get(), ptr.getOffset(), ptr.getLength());
-				} else {
-					topValue = ptr.copyBytes();
-				}
+    }
 
-				topOrder = new BinaryComparator(currentOrder);
-			}
-		}
+    @Override
+    public String toString() {
+        StringBuilder out = new StringBuilder("FirstLastValueServerAggregator"
+                + " is ascending: " + isAscending + " value=");
+        if (useOffset) {
+            for (byte[] key : topValues.keySet()) {
+                out.append(topValues.get(key));
+            }
+            out.append(" offset = ").append(offset);
+        } else {
+            out.append(topValue);
+        }
 
-	}
+        return out.toString();
+    }
 
-	@Override
-	public String toString() {
-		StringBuilder out = new StringBuilder("FirstLastValueServerAggregator"
-				+ " is ascending: " + isAscending + " value=");
-		if (useOffset) {
-			for (byte[] key : topValues.keySet()) {
-				out.append(topValues.get(key));
-			}
-			out.append(" offset = ").append(offset);
-		} else {
-			out.append(topValue);
-		}
+    @Override
+    public boolean evaluate(Tuple tuple, ImmutableBytesWritable ptr) {
 
-		return out.toString();
-	}
+        FirstLastNthValueDataContainer payload = new FirstLastNthValueDataContainer();
+        payload.setIsAscending(isAscending);
 
-	@Override
-	public boolean evaluate(Tuple tuple, ImmutableBytesWritable ptr) {
-		if (useOffset) {
-			if (topValues.size() == 0) {
-				return false;
-			}
+        payload.setFixedWidthOrderValues(orderByColumn.getDataType().isFixedWidth());
+        payload.setFixedWidthDataValues(dataColumn.getDataType().isFixedWidth());
 
-			FirstLastValueOffsetDataContainer payload = new FirstLastValueOffsetDataContainer();
-			payload.setIsAscending(isAscending);
-			payload.setOffset(offset);
-			payload.setData(topValues);
+        if (useOffset) {
+            payload.setOffset(offset);
 
-			try {
-				ptr.set(payload.getPayload());
-			} catch (IOException ex) {
-				logger.error(ex.getMessage());
-				return false;
-			}
-			return true;
-		}
+            if (topValues.size() == 0) {
+                return false;
+            }
+        } else {
+            if (topValue == null) {
+                return false;
+            }
+            topValues.put(topOrder.getValue(), topValue);
+        }
+        payload.setData(topValues);
 
-		if (topValue == null) {
-			return false;
-		}
+        try {
+            ptr.set(payload.getPayload());
+        } catch (IOException ex) {
+            logger.error(ex.getMessage());
+            return false;
+        }
+        return true;
+    }
 
-		FirstLastValueDataContainer payload = new FirstLastValueDataContainer();
-		payload.setOrdertValue(topOrder.getValue());
-		payload.setValue(topValue);
-		payload.setIsAscending(isAscending);
+    @Override
+    public PDataType getDataType() {
+        return PDataType.VARBINARY;
+    }
 
-		ptr.set(payload.getBytesMessage());
-		return true;
-	}
+    public void init(List<Expression> children, boolean isAscending, int offset) {
+        this.children = children;
+        this.offset = offset;
+        if (offset > 0) {
+            useOffset = true;
+        }
 
-	@Override
-	public PDataType getDataType() {
-		return PDataType.VARBINARY;
-	}
+        orderByColumn = children.get(0);
+        dataColumn = children.get(2);
 
-	public void init(List<Expression> children, boolean isAscending, int offset) {
-		this.children = children;
-		this.offset = offset;
-		if (offset > 0) {
-			useOffset = true;
-		}
-
-		//set order if modified
-		if (getDataColumnChild().getSortOrder() == SortOrder.DESC) {
-			hasValueDescSortOrder = true;
-		}
-		if (getOrderByColumnChild().getSortOrder() == SortOrder.DESC) {
-			this.isAscending = !isAscending;
-		} else {
-			this.isAscending = isAscending;
-		}
-
-	}
+        //set order if modified
+        if (dataColumn.getSortOrder() == SortOrder.DESC) {
+            hasValueDescSortOrder = true;
+        }
+        if (orderByColumn.getSortOrder() == SortOrder.DESC) {
+            this.isAscending = !isAscending;
+        } else {
+            this.isAscending = isAscending;
+        }
+    }
 }

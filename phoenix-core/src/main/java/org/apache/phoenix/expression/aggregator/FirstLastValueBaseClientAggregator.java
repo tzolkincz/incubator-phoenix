@@ -17,19 +17,19 @@
  */
 package org.apache.phoenix.expression.aggregator;
 
-import java.io.IOException;
+import java.util.Map;
+import java.util.Map.Entry;
 import org.apache.phoenix.schema.PDataType;
-import org.apache.phoenix.schema.tuple.SingleKeyValueTuple;
 import org.apache.phoenix.schema.tuple.Tuple;
-import org.apache.phoenix.util.BinarySerializableComparator;
 import org.apache.phoenix.util.ByteUtil;
-import org.apache.phoenix.util.FirstLastValueDataContainer;
-import org.apache.phoenix.util.FirstLastValueOffsetDataContainer;
 import java.util.Set;
 import java.util.TreeMap;
 import org.apache.hadoop.hbase.filter.BinaryComparator;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.hbase.util.Bytes.ByteArrayComparator;
 import org.apache.phoenix.schema.SortOrder;
+import org.apache.phoenix.schema.tuple.SingleKeyValueTuple;
+import org.apache.phoenix.util.FirstLastNthValueDataContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,109 +39,103 @@ import org.slf4j.LoggerFactory;
  */
 public class FirstLastValueBaseClientAggregator extends BaseAggregator {
 
-	private static final Logger logger = LoggerFactory.getLogger(FirstLastValueBaseClientAggregator.class);
-	protected boolean useOffset = false;
-	protected int offset = -1;
-	protected BinaryComparator topOrder = new BinaryComparator(ByteUtil.EMPTY_BYTE_ARRAY);
-	protected byte[] topValue = null;
-	protected TreeMap<byte[], byte[]> topValues = new TreeMap<byte[], byte[]>(new BinarySerializableComparator());
-	protected boolean isAscending;
+    private static final Logger logger = LoggerFactory.getLogger(FirstLastValueBaseClientAggregator.class);
+    protected boolean useOffset = false;
+    protected int offset = -1;
+    protected BinaryComparator topOrder = new BinaryComparator(ByteUtil.EMPTY_BYTE_ARRAY);
+    protected byte[] topValue = null;
+    protected TreeMap<byte[], byte[]> topValues = new TreeMap<byte[], byte[]>(new ByteArrayComparator());
+    protected boolean isAscending;
 
-	public FirstLastValueBaseClientAggregator() {
-		super(SortOrder.getDefault());
-	}
+    public FirstLastValueBaseClientAggregator() {
+        super(SortOrder.getDefault());
+    }
 
-	@Override
-	public void reset() {
-		topOrder = new BinaryComparator(ByteUtil.EMPTY_BYTE_ARRAY);
-		topValue = null;
-		topValues.clear();
-	}
+    @Override
+    public void reset() {
+        topOrder = new BinaryComparator(ByteUtil.EMPTY_BYTE_ARRAY);
+        topValue = null;
+        topValues.clear();
+    }
 
-	@Override
-	public boolean evaluate(Tuple tuple, ImmutableBytesWritable ptr) {
-		if (useOffset) {
-			if (topValues.size() == 0) {
-				return false;
-			}
+    @Override
+    public boolean evaluate(Tuple tuple, ImmutableBytesWritable ptr) {
+        if (useOffset) {
+            if (topValues.size() == 0) {
+                return false;
+            }
 
-			Set<byte[]> keySet;
-			if (isAscending) {
-				keySet = topValues.keySet();
-			} else {
-				keySet = topValues.descendingKeySet();
-			}
+            Set<Map.Entry<byte[], byte[]>> entrySet;
+            if (isAscending) {
+                entrySet = topValues.entrySet();
+            } else {
+                entrySet = topValues.descendingMap().entrySet();
+            }
 
-			int counter = offset;
-			for (byte[] currentKey : keySet) {
-				if (counter-- == 1) {
-					ptr.set(topValues.get(currentKey));
-					return true;
-				}
-			}
+            int counter = offset;
+            for (Map.Entry<byte[], byte[]> entry : entrySet) {
+                if (--counter == 0) {
+                    ptr.set(entry.getValue());
+                    return true;
+                }
+            }
 
-			//not enought values to return Nth
-			return false;
-		}
+            //not enought values to return Nth
+            return false;
+        }
 
-		if (topValue == null) {
-			return false;
-		}
+        if (topValue == null) {
+            return false;
+        }
 
-		ptr.set(topValue);
-		return true;
-	}
+        ptr.set(topValue);
+        return true;
+    }
 
-	@Override
-	public void aggregate(Tuple tuple, ImmutableBytesWritable ptr) {
-		if (useOffset) {
-			FirstLastValueOffsetDataContainer payload = new FirstLastValueOffsetDataContainer();
-			try {
-				payload.setPayload(ptr.copyBytes());
-				topValues.putAll(payload.getData());
-				isAscending = payload.getIsAscending();
-			} catch (IOException ex) {
-				logger.error(ex.getMessage());
-			}
-		} else {
-			//if is called cause aggregation in ORDER BY clausule
-			if (tuple instanceof SingleKeyValueTuple) {
-				topValue = ptr.copyBytes();
-				return;
-			}
+    @Override
+    public void aggregate(Tuple tuple, ImmutableBytesWritable ptr) {
 
-			byte[] messageFromRow = new byte[ptr.getSize()];
-			System.arraycopy(ptr.get(), ptr.getOffset(), messageFromRow, 0, ptr.getLength());
+        //if is called cause aggregation in ORDER BY clausule
+        if (tuple instanceof SingleKeyValueTuple) {
+            topValue = ptr.copyBytes();
+            return;
+        }
 
-			FirstLastValueDataContainer payload = new FirstLastValueDataContainer();
-			payload.setBytesMessage(messageFromRow);
+        FirstLastNthValueDataContainer payload = new FirstLastNthValueDataContainer();
 
-			byte[] currentValue = payload.getValue();
-			byte[] currentOrder = payload.getOrderValue();
-			isAscending = payload.getIsAscending();
+        payload.setPayload(ptr.copyBytes());
+        isAscending = payload.getIsAscending();
+        TreeMap serverAggregatorResult = payload.getData();
 
-			boolean isBetter;
-			if (isAscending) {
-				isBetter = topOrder.compareTo(currentOrder) > 0;
-			} else {
-				isBetter = topOrder.compareTo(currentOrder) < 0; //desc
-			}
-			if (topOrder.getValue().length < 1 || isBetter) {
-				topOrder = new BinaryComparator(currentOrder);
-				topValue = currentValue;
-			}
-		}
-	}
+        if (useOffset) {
+            payload.setOffset(offset);
+            topValues.putAll(serverAggregatorResult);
+        } else {
+            Entry<byte[], byte[]> valueEntry = serverAggregatorResult.firstEntry();
+            byte[] currentOrder = valueEntry.getKey();
 
-	@Override
-	public PDataType getDataType() {
-		return PDataType.VARBINARY;
-	}
+            boolean isBetter;
+            if (isAscending) {
+                isBetter = topOrder.compareTo(currentOrder) > 0;
+            } else {
+                isBetter = topOrder.compareTo(currentOrder) < 0; //desc
+            }
+            if (topOrder.getValue().length < 1 || isBetter) {
+                topOrder = new BinaryComparator(currentOrder);
+                topValue = valueEntry.getValue();
+            }
+        }
+    }
 
-	public void init(int offset) {
-		if (offset != 0) {
-			useOffset = true;
-			this.offset = offset;
-		}
-	}
+    @Override
+    public PDataType getDataType() {
+        return PDataType.VARBINARY;
+    }
+
+    public void init(int offset) {
+        if (offset != 0) {
+            useOffset = true;
+            this.offset = offset;
+        }
+    }
 }
