@@ -47,7 +47,7 @@ public class FirstLastValueServerAggregator extends BaseAggregator {
     protected int offset = -1;
     protected TreeMap<byte[], byte[]> topValues = new TreeMap<byte[], byte[]>(new Bytes.ByteArrayComparator());
     protected boolean isAscending;
-    protected boolean hasValueDescSortOrder = false;
+    protected boolean hasValueDescSortOrder;
     protected Expression orderByColumn;
     protected Expression dataColumn;
 
@@ -194,9 +194,8 @@ public class FirstLastValueServerAggregator extends BaseAggregator {
         dataColumn = children.get(2);
 
         //set order if modified
-        if (dataColumn.getSortOrder() == SortOrder.DESC) {
-            hasValueDescSortOrder = true;
-        }
+        hasValueDescSortOrder = (dataColumn.getSortOrder() == SortOrder.DESC);
+
         if (orderByColumn.getSortOrder() == SortOrder.DESC) {
             this.isAscending = !isAscending;
         } else {
