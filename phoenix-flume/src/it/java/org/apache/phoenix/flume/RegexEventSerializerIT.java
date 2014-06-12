@@ -40,16 +40,18 @@ import org.apache.flume.conf.Configurables;
 import org.apache.flume.event.EventBuilder;
 import org.apache.flume.lifecycle.LifecycleState;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.phoenix.end2end.BaseHBaseManagedTimeIT;
+import org.apache.phoenix.end2end.HBaseManagedTimeTest;
+import org.apache.phoenix.flume.serializer.EventSerializers;
+import org.apache.phoenix.flume.sink.PhoenixSink;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.apache.phoenix.end2end.BaseHBaseManagedTimeIT;
-import org.apache.phoenix.flume.serializer.EventSerializers;
-import org.apache.phoenix.flume.sink.PhoenixSink;
-import org.apache.phoenix.util.TestUtil;
 
+@Category(HBaseManagedTimeTest.class)
 public class RegexEventSerializerIT extends BaseHBaseManagedTimeIT {
 
     private Context sinkContext;
@@ -216,7 +218,7 @@ public class RegexEventSerializerIT extends BaseHBaseManagedTimeIT {
                 "  status integer , size integer , referer varchar , agent varchar CONSTRAINT pk PRIMARY KEY (uid))\n";
        
         sinkContext.put(FlumeConstants.CONFIG_TABLE, fullTableName);
-        sinkContext.put(FlumeConstants.CONFIG_JDBC_URL, TestUtil.PHOENIX_JDBC_URL);
+        sinkContext.put(FlumeConstants.CONFIG_JDBC_URL, getUrl());
         sinkContext.put(FlumeConstants.CONFIG_SERIALIZER,EventSerializers.REGEX.name());
         sinkContext.put(FlumeConstants.CONFIG_TABLE_DDL, ddl);
         sinkContext.put(FlumeConstants.CONFIG_SERIALIZER_PREFIX + FlumeConstants.CONFIG_REGULAR_EXPRESSION,logRegex);
@@ -285,7 +287,7 @@ public class RegexEventSerializerIT extends BaseHBaseManagedTimeIT {
                 "  CONSTRAINT pk PRIMARY KEY (rowkey))\n";
        
         sinkContext.put(FlumeConstants.CONFIG_TABLE, fullTableName);
-        sinkContext.put(FlumeConstants.CONFIG_JDBC_URL, TestUtil.PHOENIX_JDBC_URL);
+        sinkContext.put(FlumeConstants.CONFIG_JDBC_URL, getUrl());
         sinkContext.put(FlumeConstants.CONFIG_SERIALIZER,EventSerializers.REGEX.name());
         sinkContext.put(FlumeConstants.CONFIG_TABLE_DDL, ddl);
         sinkContext.put(FlumeConstants.CONFIG_SERIALIZER_PREFIX + FlumeConstants.CONFIG_REGULAR_EXPRESSION,"^([^\t]+)\t([^\t]+)$");
@@ -372,7 +374,7 @@ public class RegexEventSerializerIT extends BaseHBaseManagedTimeIT {
                 "  CONSTRAINT pk PRIMARY KEY (flume_time))\n";
        
         sinkContext.put(FlumeConstants.CONFIG_TABLE, fullTableName);
-        sinkContext.put(FlumeConstants.CONFIG_JDBC_URL, TestUtil.PHOENIX_JDBC_URL);
+        sinkContext.put(FlumeConstants.CONFIG_JDBC_URL, getUrl());
         sinkContext.put(FlumeConstants.CONFIG_SERIALIZER,EventSerializers.REGEX.name());
         sinkContext.put(FlumeConstants.CONFIG_TABLE_DDL, ddl);
         sinkContext.put(FlumeConstants.CONFIG_SERIALIZER_PREFIX + FlumeConstants.CONFIG_REGULAR_EXPRESSION,"^([^\t]+)\t([^\t]+)$");

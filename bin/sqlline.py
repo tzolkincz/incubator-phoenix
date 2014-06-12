@@ -24,16 +24,12 @@ import subprocess
 import sys
 import phoenix_utils
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
-phoenix_jar_path = os.getenv('PHOENIX_LIB_DIR',
-                             os.path.join(current_dir, "..", "phoenix-assembly",
-                                "target"))
-phoenix_client_jar = phoenix_utils.find("phoenix-*-client.jar", phoenix_jar_path)
+phoenix_utils.setPath()
 
 if len(sys.argv) < 2:
-    print "Zookeeper not specified. \nUsage: sqlline.sh <zookeeper> \
-<optional_sql_file> \nExample: \n 1. sqlline.sh localhost \n 2. sqlline.sh \
-localhost ../examples/stock_symbol.sql"
+    print "Zookeeper not specified. \nUsage: sqlline.py <zookeeper> \
+<optional_sql_file> \nExample: \n 1. sqlline.py localhost:2181:/hbase \n 2. sqlline.py \
+localhost:2181:/hbase ../examples/stock_symbol.sql"
     sys.exit()
 
 sqlfile = ""
@@ -41,12 +37,17 @@ sqlfile = ""
 if len(sys.argv) > 2:
     sqlfile = "--run=" + sys.argv[2]
 
-java_cmd = 'java -cp ".' + os.pathsep + phoenix_client_jar + \
+colorSetting = "true"
+# disable color setting for windows OS
+if os.name == 'nt':
+    colorSetting = "false"
+
+java_cmd = 'java -cp ".' + os.pathsep + phoenix_utils.phoenix_client_jar + \
     '" -Dlog4j.configuration=file:' + \
-    os.path.join(current_dir, "log4j.properties") + \
+    os.path.join(phoenix_utils.current_dir, "log4j.properties") + \
     " sqlline.SqlLine -d org.apache.phoenix.jdbc.PhoenixDriver \
 -u jdbc:phoenix:" + sys.argv[1] + \
-    " -n none -p none --color=true --fastConnect=false --verbose=true \
+    " -n none -p none --color=" + colorSetting + " --fastConnect=false --verbose=true \
 --isolation=TRANSACTION_READ_COMMITTED " + sqlfile
 
 subprocess.call(java_cmd, shell=True)

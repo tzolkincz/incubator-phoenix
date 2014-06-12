@@ -17,7 +17,6 @@
  */
 package org.apache.phoenix.end2end;
 
-import static org.apache.phoenix.util.TestUtil.PHOENIX_JDBC_URL;
 import static org.apache.phoenix.util.TestUtil.STABLE_NAME;
 import static org.apache.phoenix.util.TestUtil.TEST_PROPERTIES;
 import static org.junit.Assert.assertArrayEquals;
@@ -32,10 +31,11 @@ import java.util.Properties;
 import org.apache.phoenix.query.ConnectionQueryServices;
 import org.apache.phoenix.query.StatsManager;
 import org.apache.phoenix.query.StatsManagerImpl;
-import org.apache.phoenix.query.StatsManagerImpl.TimeKeeper;
 import org.apache.phoenix.schema.TableRef;
 import org.apache.phoenix.util.PhoenixRuntime;
+import org.apache.phoenix.util.TimeKeeper;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 
 /**
@@ -46,16 +46,18 @@ import org.junit.Test;
  * cleared between test runs.
  *
  */
+
+@Category(ClientManagedTimeTest.class)
 public class StatsManagerIT extends BaseParallelIteratorsRegionSplitterIT {
     
     private static class ManualTimeKeeper implements TimeKeeper {
         private long currentTime = 0;
         @Override
-        public long currentTimeMillis() {
+        public long getCurrentTime() {
             return currentTime;
         }
         
-        public void setCurrentTimeMillis(long currentTime) {
+        public void setCurrentTime(long currentTime) {
             this.currentTime = currentTime;
         }
     }
@@ -126,7 +128,7 @@ public class StatsManagerIT extends BaseParallelIteratorsRegionSplitterIT {
         long waitTime = 5000;
         
         ManualTimeKeeper timeKeeper = new ManualTimeKeeper();
-        timeKeeper.setCurrentTimeMillis(startTime);
+        timeKeeper.setCurrentTime(startTime);
         ConnectionQueryServices services = driver.getConnectionQueryServices(getUrl(), TEST_PROPERTIES);
         StatsManager stats = new StatsManagerImpl(services, updateFreq, maxAge, timeKeeper);
         MinKeyChange minKeyChange = new MinKeyChange(stats, table);
@@ -139,7 +141,7 @@ public class StatsManagerIT extends BaseParallelIteratorsRegionSplitterIT {
         assertArrayEquals(KMAX, stats.getMaxKey(table));
         minKeyChange = new MinKeyChange(stats, table);
         
-        url = PHOENIX_JDBC_URL + ";" + PhoenixRuntime.CURRENT_SCN_ATTRIB + "=" + ts+2;
+        url = getUrl() + ";" + PhoenixRuntime.CURRENT_SCN_ATTRIB + "=" + ts+2;
         props = new Properties(TEST_PROPERTIES);
         conn = DriverManager.getConnection(url, props);
         PreparedStatement delStmt = conn.prepareStatement("delete from " + STABLE_NAME + " where id=?");
@@ -152,7 +154,7 @@ public class StatsManagerIT extends BaseParallelIteratorsRegionSplitterIT {
         conn.commit();
 
         assertFalse(waitForAsyncChange(minKeyChange,waitTime)); // Stats won't change until they're attempted to be retrieved again
-        timeKeeper.setCurrentTimeMillis(timeKeeper.currentTimeMillis() + updateFreq);
+        timeKeeper.setCurrentTime(timeKeeper.getCurrentTime() + updateFreq);
         minKeyChange = new MinKeyChange(stats, table); // Will kick off change, but will upate asynchronously
         assertArrayEquals(KMIN, minKeyChange.value);
         assertTrue(waitForAsyncChange(minKeyChange,waitTime));
@@ -160,7 +162,7 @@ public class StatsManagerIT extends BaseParallelIteratorsRegionSplitterIT {
         assertArrayEquals(KMAX, stats.getMaxKey(table));
         minKeyChange = new MinKeyChange(stats, table);
         
-        timeKeeper.setCurrentTimeMillis(timeKeeper.currentTimeMillis() + maxAge);
+        timeKeeper.setCurrentTime(timeKeeper.getCurrentTime() + maxAge);
         minKeyChange = new MinKeyChange(stats, table); // Will kick off change, but will upate asynchronously
         assertTrue(null == minKeyChange.value);
         assertTrue(waitForAsyncChange(minKeyChange,waitTime));
@@ -177,7 +179,7 @@ public class StatsManagerIT extends BaseParallelIteratorsRegionSplitterIT {
         conn.close();
 
         assertFalse(waitForAsyncChange(maxKeyChange,waitTime)); // Stats won't change until they're attempted to be retrieved again
-        timeKeeper.setCurrentTimeMillis(timeKeeper.currentTimeMillis() + updateFreq);
+        timeKeeper.setCurrentTime(timeKeeper.getCurrentTime() + updateFreq);
         maxKeyChange = new MaxKeyChange(stats, table); // Will kick off change, but will upate asynchronously
         assertArrayEquals(KMAX, maxKeyChange.value);
         assertTrue(waitForAsyncChange(maxKeyChange,waitTime));
@@ -185,7 +187,7 @@ public class StatsManagerIT extends BaseParallelIteratorsRegionSplitterIT {
         assertArrayEquals(KMIN2, stats.getMinKey(table));
         maxKeyChange = new MaxKeyChange(stats, table);
         
-        timeKeeper.setCurrentTimeMillis(timeKeeper.currentTimeMillis() + maxAge);
+        timeKeeper.setCurrentTime(timeKeeper.getCurrentTime() + maxAge);
         maxKeyChange = new MaxKeyChange(stats, table); // Will kick off change, but will upate asynchronously
         assertTrue(null == maxKeyChange.value);
         assertTrue(waitForAsyncChange(maxKeyChange,waitTime));

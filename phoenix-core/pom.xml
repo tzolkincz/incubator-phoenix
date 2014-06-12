@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.apache.phoenix</groupId>
     <artifactId>phoenix</artifactId>
-    <version>4.1.0-SNAPSHOT</version>
+    <version>4.1.0-incubating-SNAPSHOT</version>
   </parent>
   <artifactId>phoenix-core</artifactId>
   <name>Phoenix Core</name>
@@ -252,11 +252,6 @@
       <version>4.0.1</version>
     </dependency>
     <dependency>
-      <groupId>org.jruby</groupId>
-      <artifactId>jruby-complete</artifactId>
-      <version>${jruby.version}</version>
-    </dependency>
-    <dependency>
       <groupId>log4j</groupId>
       <artifactId>log4j</artifactId>
       <version>${log4j.version}</version>
@@ -300,6 +295,11 @@
     <dependency>
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>commons-collections</groupId>
+      <artifactId>commons-collections</artifactId>
+      <version>${collections.version}</version>
     </dependency>    
   </dependencies>
 
@@ -318,6 +318,12 @@
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-testing-util</artifactId>
             <version>${hbase-hadoop1.version}</version>
+            <exclusions>
+              <exclusion>
+                <groupId>org.jruby</groupId>
+                <artifactId>jruby-complete</artifactId>
+              </exclusion>
+            </exclusions>
           </dependency>
           <dependency>
             <groupId>org.apache.hbase</groupId>
@@ -325,6 +331,12 @@
             <version>${hbase-hadoop1.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
+            <exclusions>
+              <exclusion>
+                <groupId>org.jruby</groupId>
+                <artifactId>jruby-complete</artifactId>
+              </exclusion>
+            </exclusions>
           </dependency>
           <dependency>
             <groupId>org.apache.hbase</groupId>

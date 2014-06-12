@@ -17,17 +17,23 @@
  */
 package org.apache.phoenix.end2end;
 
-import static org.apache.phoenix.util.TestUtil.*;
-import static org.junit.Assert.*;
+import static org.apache.phoenix.util.TestUtil.ROW6;
+import static org.apache.phoenix.util.TestUtil.ROW7;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.Properties;
 
-import org.junit.Test;
-
 import org.apache.phoenix.util.PhoenixRuntime;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
-
+@Category(ClientManagedTimeTest.class)
 public class CoalesceFunctionIT extends BaseClientManagedTimeIT {
     @Test
     public void testCoalesce() throws Exception {
@@ -36,7 +42,7 @@ public class CoalesceFunctionIT extends BaseClientManagedTimeIT {
         initATableValues(tenantId, getDefaultSplits(tenantId), null, ts);
         Properties props = new Properties();
         props.setProperty(PhoenixRuntime.CURRENT_SCN_ATTRIB, Long.toString(ts + 1)); // Execute at timestamp 1
-        Connection conn = DriverManager.getConnection(PHOENIX_JDBC_URL, props);
+        Connection conn = DriverManager.getConnection(getUrl(), props);
         String query = "SELECT entity_id, a_integer + COALESCE(x_integer,1) FROM ATABLE WHERE organization_id = ? AND a_integer >= 6 AND a_integer <= 7";
         PreparedStatement statement = conn.prepareStatement(query);
         statement.setString(1, tenantId);

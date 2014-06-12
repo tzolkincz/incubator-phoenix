@@ -40,7 +40,9 @@ import org.apache.phoenix.util.CSVCommonsLoader;
 import org.apache.phoenix.util.DateUtil;
 import org.apache.phoenix.util.PhoenixRuntime;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
+@Category(HBaseManagedTimeTest.class)
 public class CSVCommonsLoaderIT extends BaseHBaseManagedTimeIT {
 
     private static final String DATATYPE_TABLE = "DATATYPE";
@@ -153,7 +155,7 @@ public class CSVCommonsLoaderIT extends BaseHBaseManagedTimeIT {
 
             // Upsert TDV file
             CSVCommonsLoader csvUtil = new CSVCommonsLoader(conn, STOCK_TABLE,Collections.<String> emptyList()
-                    , true,Arrays.asList("\t", "0", "0"), CSVCommonsLoader.DEFAULT_ARRAY_ELEMENT_SEPARATOR);
+                    , true, '\t', '"', null, CSVCommonsLoader.DEFAULT_ARRAY_ELEMENT_SEPARATOR);
             csvUtil.upsert(new StringReader(STOCK_TDV_VALUES_WITH_HEADER));
 
             // Compare Phoenix ResultSet with CSV file content
@@ -195,8 +197,8 @@ public class CSVCommonsLoaderIT extends BaseHBaseManagedTimeIT {
 
             // Upsert CSV file
             CSVCommonsLoader csvUtil = new CSVCommonsLoader(conn, STOCK_TABLE,
-                    Arrays.<String> asList(STOCK_COLUMNS), true, Arrays.asList(
-                    "1", "2", "3"), CSVCommonsLoader.DEFAULT_ARRAY_ELEMENT_SEPARATOR);
+                    Arrays.<String> asList(STOCK_COLUMNS), true,
+                    '1', '2', '3', CSVCommonsLoader.DEFAULT_ARRAY_ELEMENT_SEPARATOR);
             csvUtil.upsert(new StringReader(STOCK_CSV_VALUES_WITH_DELIMITER));
 
             // Compare Phoenix ResultSet with CSV file content
@@ -575,7 +577,7 @@ public class CSVCommonsLoaderIT extends BaseHBaseManagedTimeIT {
 
             // Upsert CSV file
             CSVCommonsLoader csvUtil = new CSVCommonsLoader(conn, "ARRAY_TABLE",
-                    Collections.<String> emptyList(), true, null, "!");
+                    null, true, ',', '"', null, "!");
             csvUtil.upsert(
                     new StringReader("ID,VALARRAY\n"
                             + "1,2!3!4\n"));
@@ -598,4 +600,25 @@ public class CSVCommonsLoaderIT extends BaseHBaseManagedTimeIT {
         }
     }
 
+    @Test
+    public void testCSVCommonsUpsert_NonExistentTable() throws Exception {
+        PhoenixConnection conn = null;
+        try {
+            conn = DriverManager.getConnection(getUrl()).unwrap(
+                    PhoenixConnection.class);
+            CSVCommonsLoader csvUtil = new CSVCommonsLoader(conn, "NONEXISTENTTABLE",
+                    null, true, ',', '"', null, "!");
+            csvUtil.upsert(
+                    new StringReader("ID,VALARRAY\n"
+                            + "1,2!3!4\n"));
+            fail("Trying to load a non-existent table should fail");
+        } catch (IllegalArgumentException e) {
+            assertEquals("Table NONEXISTENTTABLE not found", e.getMessage());
+        } finally {
+            if (conn != null) {
+                conn.close();
+            }
+        }
+
+    }
 }

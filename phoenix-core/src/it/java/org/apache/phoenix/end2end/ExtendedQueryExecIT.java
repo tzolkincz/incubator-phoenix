@@ -17,16 +17,23 @@
  */
 package org.apache.phoenix.end2end;
 
-import static org.apache.phoenix.util.TestUtil.PHOENIX_JDBC_URL;
 import static org.apache.phoenix.util.TestUtil.TEST_PROPERTIES;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Properties;
 
-import org.junit.Test;
-
 import org.apache.phoenix.util.PhoenixRuntime;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 
 
@@ -35,6 +42,7 @@ import org.apache.phoenix.util.PhoenixRuntime;
  * Extended tests for Phoenix JDBC implementation
  * 
  */
+@Category(ClientManagedTimeTest.class)
 public class ExtendedQueryExecIT extends BaseClientManagedTimeIT {
 
     @Test
@@ -47,7 +55,7 @@ public class ExtendedQueryExecIT extends BaseClientManagedTimeIT {
         
         Properties props = new Properties(TEST_PROPERTIES);
         props.setProperty(PhoenixRuntime.CURRENT_SCN_ATTRIB, Long.toString(ts+1));
-        Connection conn = DriverManager.getConnection(PHOENIX_JDBC_URL, props);
+        Connection conn = DriverManager.getConnection(getUrl(), props);
         try {
             String query = "SELECT a_date FROM atable WHERE organization_id='" + tenantId + "' and a_date < TO_DATE(?)";
             PreparedStatement statement = conn.prepareStatement(query);
@@ -68,7 +76,7 @@ public class ExtendedQueryExecIT extends BaseClientManagedTimeIT {
         String tenantId = getOrganizationId();
         initATableValues(tenantId, getDefaultSplits(tenantId),null, ts);
         Properties props = new Properties(TEST_PROPERTIES);
-        Connection conn = DriverManager.getConnection(PHOENIX_JDBC_URL, props);
+        Connection conn = DriverManager.getConnection(getUrl(), props);
         try {
             String query = "SELECT a_date FROM atable WHERE organization_id='" + tenantId + "' and a_date < TO_DATE(?)";
             PreparedStatement statement = conn.prepareStatement(query);
@@ -97,7 +105,7 @@ public class ExtendedQueryExecIT extends BaseClientManagedTimeIT {
         
         Properties props = new Properties(TEST_PROPERTIES);
         props.setProperty(PhoenixRuntime.CURRENT_SCN_ATTRIB, Long.toString(ts+1));
-        Connection conn = DriverManager.getConnection(PHOENIX_JDBC_URL, props);
+        Connection conn = DriverManager.getConnection(getUrl(), props);
         try {
             ResultSet rs;
             String queryPrefix = "SELECT a_date FROM atable WHERE organization_id='" + tenantId + "' and ";
@@ -143,7 +151,7 @@ public class ExtendedQueryExecIT extends BaseClientManagedTimeIT {
         
         Properties props = new Properties(TEST_PROPERTIES);
         props.setProperty(PhoenixRuntime.CURRENT_SCN_ATTRIB, Long.toString(ts+1));
-        Connection conn = DriverManager.getConnection(PHOENIX_JDBC_URL, props);
+        Connection conn = DriverManager.getConnection(getUrl(), props);
         try {
             ResultSet rs;
             String query = "SELECT a_date, count(1) FROM atable WHERE organization_id='" + tenantId + "' group by a_date";

@@ -19,7 +19,6 @@ package org.apache.phoenix.end2end;
 
 import static org.apache.phoenix.util.TestUtil.HBASE_NATIVE;
 import static org.apache.phoenix.util.TestUtil.HBASE_NATIVE_SCHEMA_NAME;
-import static org.apache.phoenix.util.TestUtil.PHOENIX_JDBC_URL;
 import static org.apache.phoenix.util.TestUtil.TEST_PROPERTIES;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -53,6 +52,7 @@ import org.apache.phoenix.util.PhoenixRuntime;
 import org.apache.phoenix.util.SchemaUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 
 /**
@@ -64,6 +64,7 @@ import org.junit.Test;
  * 
  * @since 0.1
  */
+@Category(ClientManagedTimeTest.class)
 public class NativeHBaseTypesIT extends BaseClientManagedTimeIT {
     private static final byte[] HBASE_NATIVE_BYTES = SchemaUtil.getTableNameAsBytes(HBASE_NATIVE_SCHEMA_NAME, HBASE_NATIVE);
     private static final byte[] FAMILY_NAME = Bytes.toBytes(SchemaUtil.normalizeIdentifier("1"));
@@ -156,7 +157,7 @@ public class NativeHBaseTypesIT extends BaseClientManagedTimeIT {
     @Test
     public void testRangeQuery1() throws Exception {
         String query = "SELECT uint_key, ulong_key, string_key FROM HBASE_NATIVE WHERE uint_key > 20 and ulong_key >= 400";
-        String url = PHOENIX_JDBC_URL + ";" + PhoenixRuntime.CURRENT_SCN_ATTRIB + "=" + (ts + 5); // Run query at timestamp 5
+        String url = getUrl() + ";" + PhoenixRuntime.CURRENT_SCN_ATTRIB + "=" + (ts + 5); // Run query at timestamp 5
         Properties props = new Properties(TEST_PROPERTIES);
         Connection conn = DriverManager.getConnection(url, props);
         try {
@@ -175,7 +176,7 @@ public class NativeHBaseTypesIT extends BaseClientManagedTimeIT {
     @Test
     public void testRangeQuery2() throws Exception {
         String query = "SELECT uint_key, ulong_key, string_key FROM HBASE_NATIVE WHERE uint_key > 20 and uint_key < 40";
-        String url = PHOENIX_JDBC_URL + ";" + PhoenixRuntime.CURRENT_SCN_ATTRIB + "=" + (ts + 5); // Run query at timestamp 5
+        String url = getUrl() + ";" + PhoenixRuntime.CURRENT_SCN_ATTRIB + "=" + (ts + 5); // Run query at timestamp 5
         Properties props = new Properties(TEST_PROPERTIES);
         Connection conn = DriverManager.getConnection(url, props);
         try {
@@ -194,7 +195,7 @@ public class NativeHBaseTypesIT extends BaseClientManagedTimeIT {
     @Test
     public void testRangeQuery3() throws Exception {
         String query = "SELECT uint_key, ulong_key, string_key FROM HBASE_NATIVE WHERE ulong_key > 200 and ulong_key < 400";
-        String url = PHOENIX_JDBC_URL + ";" + PhoenixRuntime.CURRENT_SCN_ATTRIB + "=" + (ts + 5); // Run query at timestamp 5
+        String url = getUrl() + ";" + PhoenixRuntime.CURRENT_SCN_ATTRIB + "=" + (ts + 5); // Run query at timestamp 5
         Properties props = new Properties(TEST_PROPERTIES);
         Connection conn = DriverManager.getConnection(url, props);
         try {
@@ -213,7 +214,7 @@ public class NativeHBaseTypesIT extends BaseClientManagedTimeIT {
     @Test
     public void testNegativeAgainstUnsignedNone() throws Exception {
         String query = "SELECT uint_key, ulong_key, string_key FROM HBASE_NATIVE WHERE ulong_key < -1";
-        String url = PHOENIX_JDBC_URL + ";" + PhoenixRuntime.CURRENT_SCN_ATTRIB + "=" + (ts + 5); // Run query at timestamp 5
+        String url = getUrl() + ";" + PhoenixRuntime.CURRENT_SCN_ATTRIB + "=" + (ts + 5); // Run query at timestamp 5
         Properties props = new Properties(TEST_PROPERTIES);
         Connection conn = DriverManager.getConnection(url, props);
         try {
@@ -228,7 +229,7 @@ public class NativeHBaseTypesIT extends BaseClientManagedTimeIT {
     @Test
     public void testNegativeAgainstUnsignedAll() throws Exception {
         String query = "SELECT string_key FROM HBASE_NATIVE WHERE ulong_key > -100";
-        String url = PHOENIX_JDBC_URL + ";" + PhoenixRuntime.CURRENT_SCN_ATTRIB + "=" + (ts + 5); // Run query at timestamp 5
+        String url = getUrl() + ";" + PhoenixRuntime.CURRENT_SCN_ATTRIB + "=" + (ts + 5); // Run query at timestamp 5
         Properties props = new Properties(TEST_PROPERTIES);
         Connection conn = DriverManager.getConnection(url, props);
         try {
@@ -250,7 +251,7 @@ public class NativeHBaseTypesIT extends BaseClientManagedTimeIT {
     
     @Test
     public void testNegativeAddNegativeValue() throws Exception {
-        String url = PHOENIX_JDBC_URL + ";" + PhoenixRuntime.CURRENT_SCN_ATTRIB + "=" + (ts + 5); // Run query at timestamp 5
+        String url = getUrl() + ";" + PhoenixRuntime.CURRENT_SCN_ATTRIB + "=" + (ts + 5); // Run query at timestamp 5
         Properties props = new Properties(TEST_PROPERTIES);
         Connection conn = DriverManager.getConnection(url, props);
         try {
@@ -270,7 +271,7 @@ public class NativeHBaseTypesIT extends BaseClientManagedTimeIT {
     @Test
     public void testNegativeCompareNegativeValue() throws Exception {
         String query = "SELECT string_key FROM HBASE_NATIVE WHERE uint_key > 100000";
-        String url = PHOENIX_JDBC_URL + ";" + PhoenixRuntime.CURRENT_SCN_ATTRIB + "=" + (ts + 7); // Run query at timestamp 7
+        String url = getUrl() + ";" + PhoenixRuntime.CURRENT_SCN_ATTRIB + "=" + (ts + 7); // Run query at timestamp 7
         Properties props = new Properties(TEST_PROPERTIES);
         PhoenixConnection conn = DriverManager.getConnection(url, props).unwrap(PhoenixConnection.class);
         HTableInterface hTable = conn.getQueryServices().getTable(SchemaUtil.getTableNameAsBytes(HBASE_NATIVE_SCHEMA_NAME, HBASE_NATIVE));

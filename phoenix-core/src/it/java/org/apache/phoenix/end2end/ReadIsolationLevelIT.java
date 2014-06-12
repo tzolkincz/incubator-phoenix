@@ -17,17 +17,23 @@
  */
 package org.apache.phoenix.end2end;
 
-import static org.apache.phoenix.util.TestUtil.*;
-import static org.junit.Assert.*;
+import static org.apache.phoenix.util.TestUtil.ATABLE_NAME;
+import static org.apache.phoenix.util.TestUtil.TEST_PROPERTIES;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.Properties;
 
-import org.junit.Test;
-
 import org.apache.phoenix.util.PhoenixRuntime;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
-
+@Category(ClientManagedTimeTest.class)
 public class ReadIsolationLevelIT extends BaseClientManagedTimeIT {
     private static final String ENTITY_ID1= "000000000000001";
     private static final String ENTITY_ID2= "000000000000002";
@@ -40,7 +46,7 @@ public class ReadIsolationLevelIT extends BaseClientManagedTimeIT {
 
         Properties props = new Properties();
         props.setProperty(PhoenixRuntime.CURRENT_SCN_ATTRIB, Long.toString(ts));
-        Connection upsertConn = DriverManager.getConnection(PHOENIX_JDBC_URL, props);
+        Connection upsertConn = DriverManager.getConnection(getUrl(), props);
         // Insert all rows at ts
         PreparedStatement stmt = upsertConn.prepareStatement(
                 "upsert into ATABLE VALUES (?, ?, ?)");
@@ -64,12 +70,12 @@ public class ReadIsolationLevelIT extends BaseClientManagedTimeIT {
         String query = "SELECT A_STRING FROM ATABLE WHERE ORGANIZATION_ID=? AND ENTITY_ID=?";
         Properties props = new Properties();
         props.setProperty(PhoenixRuntime.CURRENT_SCN_ATTRIB, Long.toString(ts+1));
-        Connection conn = DriverManager.getConnection(PHOENIX_JDBC_URL, props);
+        Connection conn = DriverManager.getConnection(getUrl(), props);
         conn.setAutoCommit(true);
         props.setProperty(PhoenixRuntime.CURRENT_SCN_ATTRIB, Long.toString(ts+2));
-        Connection conn2 = DriverManager.getConnection(PHOENIX_JDBC_URL, props);
+        Connection conn2 = DriverManager.getConnection(getUrl(), props);
         props.setProperty(PhoenixRuntime.CURRENT_SCN_ATTRIB, Long.toString(ts+1));
-        Connection conn3 = DriverManager.getConnection(PHOENIX_JDBC_URL, props);
+        Connection conn3 = DriverManager.getConnection(getUrl(), props);
         try {
             String tenantId = getOrganizationId();
             PreparedStatement statement = conn.prepareStatement(query);
@@ -116,7 +122,7 @@ public class ReadIsolationLevelIT extends BaseClientManagedTimeIT {
         long ts = nextTimestamp();
         initTableValues(ts, null);
         String query = "SELECT A_STRING FROM ATABLE WHERE ORGANIZATION_ID=? AND ENTITY_ID=?";
-        String url = PHOENIX_JDBC_URL + ";" + PhoenixRuntime.CURRENT_SCN_ATTRIB + "=" + (ts+1);
+        String url = getUrl() + ";" + PhoenixRuntime.CURRENT_SCN_ATTRIB + "=" + (ts+1);
         Connection conn = DriverManager.getConnection(url, TEST_PROPERTIES);
         conn.setAutoCommit(true);
         try {

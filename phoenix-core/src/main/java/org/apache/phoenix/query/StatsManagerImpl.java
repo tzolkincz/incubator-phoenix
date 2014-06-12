@@ -33,6 +33,7 @@ import org.apache.hadoop.hbase.filter.KeyOnlyFilter;
 import org.apache.phoenix.schema.TableRef;
 import org.apache.phoenix.util.SchemaUtil;
 import org.apache.phoenix.util.ServerUtil;
+import org.apache.phoenix.util.TimeKeeper;
 
 
 /**
@@ -70,16 +71,6 @@ public class StatsManagerImpl implements StatsManager {
         this.timeKeeper = timeKeeper;
     }
     
-    public static interface TimeKeeper {
-        static final TimeKeeper SYSTEM = new TimeKeeper() {
-            @Override
-            public long currentTimeMillis() {
-                return System.currentTimeMillis();
-            }
-        };
-        
-        long currentTimeMillis();
-    }
     public long getStatsUpdateFrequency() {
         return statsUpdateFrequencyMs;
     }
@@ -102,17 +93,21 @@ public class StatsManagerImpl implements StatsManager {
             } finally {
                 scanner.close();
             }
-            int maxPossibleKeyLength = SchemaUtil.estimateKeyLength(tableRef.getTable());
-            byte[] maxPossibleKey = new byte[maxPossibleKeyLength];
-            Arrays.fill(maxPossibleKey, (byte)255);
-            // Use this deprecated method to get the key "before" the max possible key value,
-            // which is the max key for a table.
-            @SuppressWarnings("deprecation")
-            Result r = hTable.getRowOrBefore(maxPossibleKey, tableRef.getTable().getColumnFamilies().iterator().next().getName().getBytes());
-            if (r != null) {
-                maxKey = r.getRow();
+            
+            // Get max possible key value
+            scan = new Scan();
+            scan.setFilter(new KeyOnlyFilter());
+            scan.setReversed(true);
+            scanner = hTable.getScanner(scan);
+            try {
+                Result r = scanner.next(); 
+                if (r != null) {
+                    maxKey = r.getRow();
+                }
+            } finally {
+                scanner.close();
             }
-            tableStatsMap.put(tableRef.getTable().getName().getString(), new PTableStats(timeKeeper.currentTimeMillis(),minKey,maxKey));
+            tableStatsMap.put(tableRef.getTable().getName().getString(), new PTableStats(timeKeeper.getCurrentTime(),minKey,maxKey));
         } catch (IOException e) {
             sqlE = ServerUtil.parseServerException(e);
         } finally {
@@ -143,7 +138,7 @@ public class StatsManagerImpl implements StatsManager {
         // multiple attempts to update the stats.
         synchronized (stats) {
             long initiatedTime = stats.getInitiatedTime();
-            long currentTime = timeKeeper.currentTimeMillis();
+            long currentTime = timeKeeper.getCurrentTime();
             // Update stats asynchronously if they haven't been updated within the specified frequency.
             // We update asynchronously because we don't ever want to block the caller - instead we'll continue
             // to use the old one.

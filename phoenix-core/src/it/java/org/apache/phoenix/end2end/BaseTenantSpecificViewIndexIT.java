@@ -32,7 +32,6 @@ import java.util.Set;
 import org.apache.hadoop.hbase.util.Pair;
 import org.apache.phoenix.util.PhoenixRuntime;
 import org.apache.phoenix.util.QueryUtil;
-import org.junit.After;
 
 public class BaseTenantSpecificViewIndexIT extends BaseHBaseManagedTimeIT {
     
@@ -103,10 +102,12 @@ public class BaseTenantSpecificViewIndexIT extends BaseHBaseManagedTimeIT {
         conn.createStatement().execute("UPSERT INTO v(k2,v1,v2) VALUES (-1, 'blah', 'superblah')"); // sanity check that we can upsert after index is there
         conn.commit();
         ResultSet rs = conn.createStatement().executeQuery("EXPLAIN SELECT k1, k2, v2 FROM v WHERE v2='" + valuePrefix + "v2-1'");
-        assertEquals(saltBuckets == null ? 
-                "CLIENT PARALLEL 1-WAY RANGE SCAN OVER _IDX_T ['" + tenantId + "',-32768,'" + valuePrefix + "v2-1']" :
-                "CLIENT PARALLEL 4-WAY SKIP SCAN ON 3 KEYS OVER _IDX_T [0,'" + tenantId + "',-32768,'" + valuePrefix + "v2-1'] - [2,'" + tenantId + "',-32768,'" + valuePrefix + "v2-1']\n" + 
-                "CLIENT MERGE SORT", QueryUtil.getExplainPlan(rs));
+        
+        String expected = saltBuckets == null ? 
+                "RANGE SCAN OVER _IDX_T ['" + tenantId + "',-32768,'" + valuePrefix + "v2-1']" :
+                "SKIP SCAN ON 3 KEYS OVER _IDX_T [0,'" + tenantId + "',-32768,'" + valuePrefix + "v2-1'] - [2,'" + tenantId + "',-32768,'" + valuePrefix + "v2-1']\n" + 
+                "CLIENT MERGE SORT";
+        assertTrue(QueryUtil.getExplainPlan(rs).contains(expected));
     }
     
     private Connection createTenantConnection(String tenantId) throws SQLException {
@@ -139,18 +140,5 @@ public class BaseTenantSpecificViewIndexIT extends BaseHBaseManagedTimeIT {
         assertEquals(9, rs.getInt(2));
         assertEquals(valuePrefix + "v2-1", rs.getString(3));
         assertFalse(rs.next());
-    }
-    
-    @After
-    public void deleteTenantViews() throws Exception {
-        for (Pair<String,String> tenantView : tenantViewsToDelete) {
-            try {
-                Connection conn = createTenantConnection(tenantView.getFirst());
-                conn.createStatement().executeUpdate("drop view " + tenantView.getSecond());
-                conn.close();
-            }
-            catch (Exception ignored) {}
-        }
-        tenantViewsToDelete.clear();
     }
 }

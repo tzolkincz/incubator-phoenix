@@ -18,7 +18,6 @@
 package org.apache.phoenix.end2end;
 
 import static org.apache.phoenix.util.TestUtil.ATABLE_NAME;
-import static org.apache.phoenix.util.TestUtil.PHOENIX_JDBC_URL;
 import static org.apache.phoenix.util.TestUtil.PTSDB3_NAME;
 import static org.apache.phoenix.util.TestUtil.PTSDB_NAME;
 import static org.junit.Assert.assertEquals;
@@ -35,18 +34,21 @@ import org.apache.phoenix.util.QueryUtil;
 import org.apache.phoenix.util.ReadOnlyProps;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import com.google.common.collect.Maps;
 
-public class QueryPlanIT extends BaseConnectedQueryIT {
+@Category(HBaseManagedTimeTest.class)
+public class QueryPlanIT extends BaseHBaseManagedTimeIT {
     
     @BeforeClass
+    @Shadower(classBeingShadowed = BaseHBaseManagedTimeIT.class)
     public static void doSetup() throws Exception {
         Map<String,String> props = Maps.newHashMapWithExpectedSize(1);
         // Override date format so we don't have a bunch of zeros
         props.put(QueryServices.DATE_FORMAT_ATTRIB, "yyyy-MM-dd");
         // Must update config before starting server
-        startServer(getUrl(), new ReadOnlyProps(props.entrySet().iterator()));
+        setUpTestDriver(getUrl(), new ReadOnlyProps(props.entrySet().iterator()));
     }
     
     @Test
@@ -184,7 +186,7 @@ public class QueryPlanIT extends BaseConnectedQueryIT {
             String query = queryPlans[i];
             String plan = queryPlans[i+1];
             Properties props = new Properties();
-            Connection conn = DriverManager.getConnection(PHOENIX_JDBC_URL, props);
+            Connection conn = DriverManager.getConnection(getUrl(), props);
             try {
                 Statement statement = conn.createStatement();
                 ResultSet rs = statement.executeQuery("EXPLAIN " + query);

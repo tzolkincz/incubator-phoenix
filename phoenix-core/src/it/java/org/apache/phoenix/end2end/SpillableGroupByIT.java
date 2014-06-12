@@ -18,9 +18,10 @@
 package org.apache.phoenix.end2end;
 
 import static org.apache.phoenix.util.TestUtil.GROUPBYTEST_NAME;
-import static org.apache.phoenix.util.TestUtil.PHOENIX_JDBC_URL;
 import static org.apache.phoenix.util.TestUtil.TEST_PROPERTIES;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -31,15 +32,17 @@ import java.sql.Statement;
 import java.util.Map;
 import java.util.Properties;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import com.google.common.collect.Maps;
 import org.apache.phoenix.query.QueryServices;
 import org.apache.phoenix.util.PhoenixRuntime;
 import org.apache.phoenix.util.ReadOnlyProps;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
-public class SpillableGroupByIT extends BaseConnectedQueryIT {
+import com.google.common.collect.Maps;
+
+@Category(HBaseManagedTimeTest.class)
+public class SpillableGroupByIT extends BaseHBaseManagedTimeIT {
 
     private static final int NUM_ROWS_INSERTED = 1000;
     
@@ -51,6 +54,7 @@ public class SpillableGroupByIT extends BaseConnectedQueryIT {
     private int id;
 
     @BeforeClass
+    @Shadower(classBeingShadowed = BaseHBaseManagedTimeIT.class)
     public static void doSetup() throws Exception {
         Map<String, String> props = Maps.newHashMapWithExpectedSize(1);
         // Set a very small cache size to force plenty of spilling
@@ -59,9 +63,9 @@ public class SpillableGroupByIT extends BaseConnectedQueryIT {
         props.put(QueryServices.GROUPBY_SPILLABLE_ATTRIB, String.valueOf(true));
         props.put(QueryServices.GROUPBY_SPILL_FILES_ATTRIB,
                 Integer.toString(1));
-
-        // Must update config before starting server
-        startServer(getUrl(), new ReadOnlyProps(props.entrySet().iterator()));
+        // Large enough to not run out of memory, but small enough to spill
+        props.put(QueryServices.MAX_MEMORY_SIZE_ATTRIB, Integer.toString(40000));
+        setUpTestDriver(getUrl(), new ReadOnlyProps(props.entrySet().iterator()));
     }
 
     private long createTable() throws Exception {
@@ -73,7 +77,7 @@ public class SpillableGroupByIT extends BaseConnectedQueryIT {
     private void loadData(long ts) throws SQLException {
         Properties props = new Properties(TEST_PROPERTIES);
         props.setProperty(PhoenixRuntime.CURRENT_SCN_ATTRIB, Long.toString(ts));
-        Connection conn = DriverManager.getConnection(PHOENIX_JDBC_URL, props);
+        Connection conn = DriverManager.getConnection(getUrl(), props);
         int groupFactor = NUM_ROWS_INSERTED / 2;
         for (int i = 0; i < NUM_ROWS_INSERTED; i++) {
             insertRow(conn, Integer.toString(i % (groupFactor)), 10);
@@ -105,8 +109,8 @@ public class SpillableGroupByIT extends BaseConnectedQueryIT {
         spGpByT.loadData(ts);
         Properties props = new Properties(TEST_PROPERTIES);
         props.setProperty(PhoenixRuntime.CURRENT_SCN_ATTRIB,
-                Long.toString(ts + 1));
-        Connection conn = DriverManager.getConnection(PHOENIX_JDBC_URL, props);
+                Long.toString(ts + 10));
+        Connection conn = DriverManager.getConnection(getUrl(), props);
         try {
             Statement stmt = conn.createStatement();
             ResultSet rs = stmt.executeQuery(GROUPBY1);
@@ -126,6 +130,37 @@ public class SpillableGroupByIT extends BaseConnectedQueryIT {
             }
             assertEquals(NUM_ROWS_INSERTED / 2, count);
             
+        } finally {
+            conn.close();
+        }
+        
+        // Test group by with limit that will exit after first row
+        props.setProperty(PhoenixRuntime.CURRENT_SCN_ATTRIB,
+                Long.toString(ts + 10));
+        conn = DriverManager.getConnection(getUrl(), props);
+        try {
+            Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery("SELECT appcpu FROM " + GROUPBYTEST_NAME + " group by appcpu limit 1");
+
+            assertTrue(rs.next());
+            assertEquals(10,rs.getInt(1));
+            assertFalse(rs.next());
+        } finally {
+            conn.close();
+        }
+        
+        // Test group by with limit that will do spilling before exiting
+        props.setProperty(PhoenixRuntime.CURRENT_SCN_ATTRIB,
+                Long.toString(ts + 10));
+        conn = DriverManager.getConnection(getUrl(), props);
+        try {
+            Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery("SELECT to_number(uri) FROM " + GROUPBYTEST_NAME + " group by to_number(uri) limit 100");
+            int count = 0;
+            while (rs.next()) {
+                count++;
+            }
+            assertEquals(100, count);
         } finally {
             conn.close();
         }

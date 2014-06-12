@@ -200,3 +200,29 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+
+======================================================================
+
+BSD Clause 3/New BSD License, applies to the following bundled libraries:
+LICENSE: http://opensource.org/licenses/BSD-3-Clause
+
+Snappy, version 1.1.0.1, http://code.google.com/p/snappy/
+Protobuf, version 2.4.0, https://code.google.com/p/protobuf/
+SQLLine, version 1.1.2, https://github.com/julianhyde/sqlline/
+
+======================================================================
+
+BSD Clause 2 License, applies to the following bundled libraries:
+LICENSE: http://opensource.org/licenses/BSD-2-Clause
+
+JLine, version 2.11, http://jline.sourceforge.net/
+ANTLR, version 3.5, http://www.antlr.org/
+
+======================================================================
+
+MIT License, applies to the following bundled library:
+LICENSE: http://opensource.org/licenses/MIT
+
+SLF4J, version 1.4.3, http://www.slf4j.org/
+
+----------------------------------------------------------------------

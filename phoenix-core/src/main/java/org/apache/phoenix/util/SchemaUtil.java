@@ -52,6 +52,8 @@ import org.apache.phoenix.schema.SaltingUtil;
 import org.apache.phoenix.schema.SortOrder;
 import org.apache.phoenix.schema.ValueSchema.Field;
 
+import com.google.common.base.Preconditions;
+
 /**
  * 
  * Static class for various schema-related utilities
@@ -61,7 +63,7 @@ import org.apache.phoenix.schema.ValueSchema.Field;
  */
 public class SchemaUtil {
     private static final int VAR_LENGTH_ESTIMATE = 10;
-    
+    public static final String ESCAPE_CHARACTER = "\"";
     public static final DataBlockEncoding DEFAULT_DATA_BLOCK_ENCODING = DataBlockEncoding.FAST_DIFF;
     public static final PDatum VAR_BINARY_DATUM = new PDatum() {
     
@@ -543,12 +545,40 @@ public class SchemaUtil {
         if (table.getBucketNum() != null) {
             offset++;
         }
-        if (table.isMultiTenant()) {
-            offset++;
-        }
-        if (table.getViewIndexId() != null) {
-            offset++;
-        }
+        // TODO: for tenant-specific table on tenant-specific connection,
+        // we should subtract one for tenant column and another one for
+        // index ID
         return (short)(table.getPKColumns().size() - offset);
+    }
+
+    public static int getPKPosition(PTable table, PColumn column) {
+        // TODO: when PColumn has getPKPosition, use that instead
+        return table.getPKColumns().indexOf(column);
+    }
+    
+    public static String getEscapedFullColumnName(String fullColumnName) {
+        int index = fullColumnName.indexOf(QueryConstants.NAME_SEPARATOR);
+        if (index < 0) {
+            return getEscapedArgument(fullColumnName); 
+        }
+        String columnFamily = fullColumnName.substring(0,index);
+        String columnName = fullColumnName.substring(index+1);
+        return getEscapedArgument(columnFamily) + QueryConstants.NAME_SEPARATOR + getEscapedArgument(columnName) ;
+    }
+    
+    public static String getEscapedFullTableName(String fullTableName) {
+        final String schemaName = getSchemaNameFromFullName(fullTableName);
+        final String tableName = getTableNameFromFullName(fullTableName);
+        return getEscapedTableName(schemaName, tableName);
+    }
+    
+    /**
+     * Escapes the given argument with {@value #ESCAPE_CHARACTER}
+     * @param argument any non null value.
+     * @return 
+     */
+    public static String getEscapedArgument(String argument) {
+        Preconditions.checkNotNull(argument,"Argument passed cannot be null");
+        return ESCAPE_CHARACTER + argument + ESCAPE_CHARACTER;
     }
 }

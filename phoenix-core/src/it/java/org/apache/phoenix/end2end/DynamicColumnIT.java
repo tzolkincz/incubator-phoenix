@@ -20,7 +20,6 @@ package org.apache.phoenix.end2end;
 
 import static org.apache.phoenix.util.TestUtil.HBASE_DYNAMIC_COLUMNS;
 import static org.apache.phoenix.util.TestUtil.HBASE_DYNAMIC_COLUMNS_SCHEMA_NAME;
-import static org.apache.phoenix.util.TestUtil.PHOENIX_JDBC_URL;
 import static org.apache.phoenix.util.TestUtil.TEST_PROPERTIES;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -46,6 +45,7 @@ import org.apache.phoenix.schema.ColumnFamilyNotFoundException;
 import org.apache.phoenix.util.SchemaUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 /**
  * Basic tests for Phoenix dynamic upserting
@@ -54,6 +54,7 @@ import org.junit.Test;
  * @since 1.3
  */
 
+@Category(ClientManagedTimeTest.class)
 public class DynamicColumnIT extends BaseClientManagedTimeIT {
     private static final byte[] HBASE_DYNAMIC_COLUMNS_BYTES = SchemaUtil.getTableNameAsBytes(null, HBASE_DYNAMIC_COLUMNS);
     private static final byte[] FAMILY_NAME = Bytes.toBytes(SchemaUtil.normalizeIdentifier("A"));
@@ -113,7 +114,7 @@ public class DynamicColumnIT extends BaseClientManagedTimeIT {
     @Test
     public void testDynamicColums() throws Exception {
         String query = "SELECT * FROM HBASE_DYNAMIC_COLUMNS (DV varchar)";
-        String url = PHOENIX_JDBC_URL + ";";
+        String url = getUrl() + ";";
         Properties props = new Properties(TEST_PROPERTIES);
         Connection conn = DriverManager.getConnection(url, props);
         try {
@@ -138,7 +139,7 @@ public class DynamicColumnIT extends BaseClientManagedTimeIT {
     @Test
     public void testDynamicColumsFamily() throws Exception {
         String query = "SELECT * FROM HBASE_DYNAMIC_COLUMNS (DV varchar,B.F2V2 varchar)";
-        String url = PHOENIX_JDBC_URL + ";";
+        String url = getUrl() + ";";
         Properties props = new Properties(TEST_PROPERTIES);
         Connection conn = DriverManager.getConnection(url, props);
         try {
@@ -165,7 +166,7 @@ public class DynamicColumnIT extends BaseClientManagedTimeIT {
     @Test
     public void testDynamicColumsSpecificQuery() throws Exception {
         String query = "SELECT entry,F2V2 FROM HBASE_DYNAMIC_COLUMNS (DV varchar,B.F2V2 varchar)";
-        String url = PHOENIX_JDBC_URL + ";";
+        String url = getUrl() + ";";
         Properties props = new Properties(TEST_PROPERTIES);
         Connection conn = DriverManager.getConnection(url, props);
         try {
@@ -186,7 +187,7 @@ public class DynamicColumnIT extends BaseClientManagedTimeIT {
     @Test(expected = ColumnAlreadyExistsException.class)
     public void testAmbiguousStaticSelect() throws Exception {
         String upsertquery = "Select * FROM HBASE_DYNAMIC_COLUMNS(A.F1V1 INTEGER)";
-        String url = PHOENIX_JDBC_URL + ";";
+        String url = getUrl() + ";";
         Properties props = new Properties(TEST_PROPERTIES);
         Connection conn = DriverManager.getConnection(url, props);
         try {
@@ -203,7 +204,7 @@ public class DynamicColumnIT extends BaseClientManagedTimeIT {
     @Test(expected = ColumnFamilyNotFoundException.class)
     public void testFakeCFDynamicUpsert() throws Exception {
         String upsertquery = "Select * FROM HBASE_DYNAMIC_COLUMNS(fakecf.DynCol VARCHAR)";
-        String url = PHOENIX_JDBC_URL + ";";
+        String url = getUrl() + ";";
         Properties props = new Properties(TEST_PROPERTIES);
         Connection conn = DriverManager.getConnection(url, props);
         try {

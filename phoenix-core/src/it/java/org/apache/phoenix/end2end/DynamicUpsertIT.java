@@ -17,19 +17,25 @@
  */
 package org.apache.phoenix.end2end;
 
-import static org.apache.phoenix.util.TestUtil.PHOENIX_JDBC_URL;
 import static org.apache.phoenix.util.TestUtil.TEST_PROPERTIES;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Properties;
-
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 import org.apache.phoenix.exception.SQLExceptionCode;
 import org.apache.phoenix.schema.ColumnAlreadyExistsException;
 import org.apache.phoenix.schema.ColumnFamilyNotFoundException;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 /**
  * Basic tests for Phoenix dynamic upserting
@@ -38,6 +44,7 @@ import org.apache.phoenix.schema.ColumnFamilyNotFoundException;
  * @since 1.3
  */
 
+@Category(ClientManagedTimeTest.class)
 public class DynamicUpsertIT extends BaseClientManagedTimeIT {
 
     private static final String TABLE = "DynamicUpserts";
@@ -63,7 +70,7 @@ public class DynamicUpsertIT extends BaseClientManagedTimeIT {
         String selectquery = "SELECT DynCol FROM " + TABLE + " (a.DynCol VARCHAR) where entry='dynEntry'";
         // String selectquery = "SELECT * FROM "+TABLE;
 
-        String url = PHOENIX_JDBC_URL + ";";
+        String url = getUrl() + ";";
         Properties props = new Properties(TEST_PROPERTIES);
         Connection conn = DriverManager.getConnection(url, props);
         conn.setAutoCommit(true);
@@ -93,7 +100,7 @@ public class DynamicUpsertIT extends BaseClientManagedTimeIT {
         String selectquery = "SELECT DynColA,entry,DynColB FROM " + TABLE
                 + " (a.DynColA VARCHAR,b.DynColB VARCHAR) where entry='dynEntry'";
 
-        String url = PHOENIX_JDBC_URL + ";";
+        String url = getUrl() + ";";
         Properties props = new Properties(TEST_PROPERTIES);
         Connection conn = DriverManager.getConnection(url, props);
         conn.setAutoCommit(true);
@@ -126,7 +133,7 @@ public class DynamicUpsertIT extends BaseClientManagedTimeIT {
         String selectquery = "SELECT entry,DynColA,a.dummy,DynColB,b.dummy FROM " + TABLE
                 + " (a.DynColA VARCHAR,b.DynColB VARCHAR) where entry='dynEntry'";
 
-        String url = PHOENIX_JDBC_URL + ";";
+        String url = getUrl() + ";";
         Properties props = new Properties(TEST_PROPERTIES);
         Connection conn = DriverManager.getConnection(url, props);
         conn.setAutoCommit(true);
@@ -158,7 +165,7 @@ public class DynamicUpsertIT extends BaseClientManagedTimeIT {
         String upsertquery = "UPSERT INTO " + TABLE
                 + " (a.DynCol VARCHAR,b.DynCol varchar) VALUES('dynEntry','aValue','bValue','dyncola')";
 
-        String url = PHOENIX_JDBC_URL + ";";
+        String url = getUrl() + ";";
         Properties props = new Properties(TEST_PROPERTIES);
         Connection conn = DriverManager.getConnection(url, props);
         try {
@@ -178,7 +185,7 @@ public class DynamicUpsertIT extends BaseClientManagedTimeIT {
     @Test(expected = ColumnAlreadyExistsException.class)
     public void testAmbiguousStaticUpsert() throws Exception {
         String upsertquery = "UPSERT INTO " + TABLE + " (a.dummy INTEGER,b.dummy INTEGER) VALUES(1,2)";
-        String url = PHOENIX_JDBC_URL + ";";
+        String url = getUrl() + ";";
         Properties props = new Properties(TEST_PROPERTIES);
         Connection conn = DriverManager.getConnection(url, props);
         try {
@@ -195,7 +202,7 @@ public class DynamicUpsertIT extends BaseClientManagedTimeIT {
     @Test(expected = ColumnAlreadyExistsException.class)
     public void testAmbiguousDynamicUpsert() throws Exception {
         String upsertquery = "UPSERT INTO " + TABLE + " (a.DynCol VARCHAR,a.DynCol INTEGER) VALUES('dynCol',1)";
-        String url = PHOENIX_JDBC_URL + ";";
+        String url = getUrl() + ";";
         Properties props = new Properties(TEST_PROPERTIES);
         Connection conn = DriverManager.getConnection(url, props);
         try {
@@ -212,7 +219,7 @@ public class DynamicUpsertIT extends BaseClientManagedTimeIT {
     @Test(expected = ColumnFamilyNotFoundException.class)
     public void testFakeCFDynamicUpsert() throws Exception {
         String upsertquery = "UPSERT INTO " + TABLE + " (fakecf.DynCol VARCHAR) VALUES('dynCol')";
-        String url = PHOENIX_JDBC_URL + ";";
+        String url = getUrl() + ";";
         Properties props = new Properties(TEST_PROPERTIES);
         Connection conn = DriverManager.getConnection(url, props);
         try {

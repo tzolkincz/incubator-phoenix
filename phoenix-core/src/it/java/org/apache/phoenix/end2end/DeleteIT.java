@@ -17,7 +17,6 @@
  */
 package org.apache.phoenix.end2end;
 
-import static org.apache.phoenix.util.TestUtil.PHOENIX_JDBC_URL;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -35,7 +34,9 @@ import java.util.List;
 
 import org.apache.phoenix.util.QueryUtil;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
+@Category(HBaseManagedTimeTest.class)
 public class DeleteIT extends BaseHBaseManagedTimeIT {
     private static final int NUMBER_OF_ROWS = 20;
     private static final int NTH_ROW_NULL = 5;
@@ -67,26 +68,70 @@ public class DeleteIT extends BaseHBaseManagedTimeIT {
     }
     
     private void testDeleteFilter(boolean autoCommit) throws Exception {
-        Connection conn = DriverManager.getConnection(PHOENIX_JDBC_URL);
+        Connection conn = DriverManager.getConnection(getUrl());
         initTableValues(conn);
-        
-        ResultSet rs;
-        rs = conn.createStatement().executeQuery("SELECT count(*) FROM IntIntKeyTest");
-        assertTrue(rs.next());
-        assertEquals(NUMBER_OF_ROWS, rs.getInt(1));
 
-        String deleteStmt ;
+        assertTableCount(conn, "IntIntKeyTest", NUMBER_OF_ROWS);
+        
         conn.setAutoCommit(autoCommit);
-        deleteStmt = "DELETE FROM IntIntKeyTest WHERE 20 = j";
+        String deleteStmt = "DELETE FROM IntIntKeyTest WHERE 20 = j";
         assertEquals(1,conn.createStatement().executeUpdate(deleteStmt));
         if (!autoCommit) {
             conn.commit();
         }
-        
-        String query = "SELECT count(*) FROM IntIntKeyTest";
-        rs = conn.createStatement().executeQuery(query);
+
+        assertTableCount(conn, "IntIntKeyTest", NUMBER_OF_ROWS - 1);
+    }
+
+    @Test
+    public void testDeleteByRowAndFilterAutoCommit() throws SQLException {
+        testDeleteByFilterAndRow(true);
+    }
+
+
+    @Test
+    public void testDeleteByRowAndFilterNoAutoCommit() throws SQLException {
+        testDeleteByFilterAndRow(false);
+    }
+
+    private void testDeleteByFilterAndRow(boolean autoCommit) throws SQLException {
+        Connection conn = DriverManager.getConnection(getUrl());
+        initTableValues(conn);
+
+        assertTableCount(conn, "IntIntKeyTest", NUMBER_OF_ROWS);
+
+        conn.setAutoCommit(autoCommit);
+
+        Statement stmt = conn.createStatement();
+
+        // This shouldn't delete anything, because the key matches but the filter doesn't
+        assertEquals(0, stmt.executeUpdate("DELETE FROM IntIntKeyTest WHERE i = 1 AND j = 1"));
+        if (!autoCommit) {
+            conn.commit();
+        }
+        assertTableCount(conn, "IntIntKeyTest", NUMBER_OF_ROWS);
+
+        // This shouldn't delete anything, because the filter matches but the key doesn't
+        assertEquals(0, stmt.executeUpdate("DELETE FROM IntIntKeyTest WHERE i = -1 AND j = 20"));
+        if (!autoCommit) {
+            conn.commit();
+        }
+        assertTableCount(conn, "IntIntKeyTest", NUMBER_OF_ROWS);
+
+        // This should do a delete, because both the filter and key match
+        assertEquals(1, stmt.executeUpdate("DELETE FROM IntIntKeyTest WHERE i = 1 AND j = 10"));
+        if (!autoCommit) {
+            conn.commit();
+        }
+        assertTableCount(conn, "IntIntKeyTest", NUMBER_OF_ROWS - 1);
+
+    }
+
+    private void assertTableCount(Connection conn, String tableName, int expectedNumberOfRows) throws SQLException {
+        ResultSet rs = conn.createStatement().executeQuery("SELECT count(*) FROM " + tableName);
         assertTrue(rs.next());
-        assertEquals(NUMBER_OF_ROWS - 1, rs.getInt(1));
+        assertEquals(expectedNumberOfRows, rs.getInt(1));
+        rs.close();
     }
     
     private static void assertIndexUsed (Connection conn, String query, String indexName, boolean expectedToBeUsed) throws SQLException {
@@ -104,7 +149,7 @@ public class DeleteIT extends BaseHBaseManagedTimeIT {
    }
     
     private void testDeleteRange(boolean autoCommit, boolean createIndex) throws Exception {
-        Connection conn = DriverManager.getConnection(PHOENIX_JDBC_URL);
+        Connection conn = DriverManager.getConnection(getUrl());
         initTableValues(conn);
         
         String indexName = "IDX";

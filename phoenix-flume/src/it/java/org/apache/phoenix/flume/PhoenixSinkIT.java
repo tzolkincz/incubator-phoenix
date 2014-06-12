@@ -30,13 +30,15 @@ import org.apache.flume.lifecycle.LifecycleState;
 import org.apache.flume.sink.DefaultSinkFactory;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.phoenix.end2end.BaseHBaseManagedTimeIT;
-import org.junit.Assert;
-import org.junit.Test;
-
+import org.apache.phoenix.end2end.HBaseManagedTimeTest;
 import org.apache.phoenix.flume.serializer.EventSerializers;
 import org.apache.phoenix.flume.sink.PhoenixSink;
 import org.apache.phoenix.util.TestUtil;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
+@Category(HBaseManagedTimeTest.class)
 public class PhoenixSinkIT extends BaseHBaseManagedTimeIT {
 
     private Context sinkContext;
@@ -55,7 +57,7 @@ public class PhoenixSinkIT extends BaseHBaseManagedTimeIT {
         
         sinkContext = new Context ();
         sinkContext.put(FlumeConstants.CONFIG_TABLE, "test");
-        sinkContext.put(FlumeConstants.CONFIG_JDBC_URL, TestUtil.PHOENIX_JDBC_URL);
+        sinkContext.put(FlumeConstants.CONFIG_JDBC_URL, getUrl());
         sinkContext.put(FlumeConstants.CONFIG_SERIALIZER,EventSerializers.REGEX.name());
         sinkContext.put(FlumeConstants.CONFIG_SERIALIZER_PREFIX + FlumeConstants.CONFIG_COLUMN_NAMES,"col1,col2");
         sinkContext.put(FlumeConstants.CONFIG_SERIALIZER_PREFIX + FlumeConstants.CONFIG_ROWKEY_TYPE_GENERATOR,DefaultKeyGenerator.TIMESTAMP.name());
@@ -70,7 +72,7 @@ public class PhoenixSinkIT extends BaseHBaseManagedTimeIT {
     public void testInvalidConfiguration () {
         
         sinkContext = new Context ();
-        sinkContext.put(FlumeConstants.CONFIG_JDBC_URL, TestUtil.PHOENIX_JDBC_URL);
+        sinkContext.put(FlumeConstants.CONFIG_JDBC_URL, getUrl());
         sinkContext.put(FlumeConstants.CONFIG_SERIALIZER,EventSerializers.REGEX.name());
         sinkContext.put(FlumeConstants.CONFIG_SERIALIZER_PREFIX + FlumeConstants.CONFIG_COLUMN_NAMES,"col1,col2");
         sinkContext.put(FlumeConstants.CONFIG_SERIALIZER_PREFIX + FlumeConstants.CONFIG_ROWKEY_TYPE_GENERATOR,DefaultKeyGenerator.TIMESTAMP.name());
@@ -84,7 +86,7 @@ public class PhoenixSinkIT extends BaseHBaseManagedTimeIT {
         
         sinkContext = new Context ();
         sinkContext.put(FlumeConstants.CONFIG_TABLE, "test");
-        sinkContext.put(FlumeConstants.CONFIG_JDBC_URL, TestUtil.PHOENIX_JDBC_URL);
+        sinkContext.put(FlumeConstants.CONFIG_JDBC_URL, getUrl());
         sinkContext.put(FlumeConstants.CONFIG_SERIALIZER,"csv");
         sinkContext.put(FlumeConstants.CONFIG_SERIALIZER_PREFIX + FlumeConstants.CONFIG_COLUMN_NAMES,"col1,col2");
         sinkContext.put(FlumeConstants.CONFIG_SERIALIZER_PREFIX + FlumeConstants.CONFIG_ROWKEY_TYPE_GENERATOR,DefaultKeyGenerator.TIMESTAMP.name());
@@ -97,7 +99,7 @@ public class PhoenixSinkIT extends BaseHBaseManagedTimeIT {
     public void testInvalidTable() {
         sinkContext = new Context ();
         sinkContext.put(FlumeConstants.CONFIG_TABLE, "flume_test");
-        sinkContext.put(FlumeConstants.CONFIG_JDBC_URL, TestUtil.PHOENIX_JDBC_URL);
+        sinkContext.put(FlumeConstants.CONFIG_JDBC_URL, getUrl());
         sinkContext.put(FlumeConstants.CONFIG_SERIALIZER,EventSerializers.REGEX.name());
         sinkContext.put(FlumeConstants.CONFIG_SERIALIZER_PREFIX + FlumeConstants.CONFIG_COLUMN_NAMES,"col1,col2");
         sinkContext.put(FlumeConstants.CONFIG_SERIALIZER_PREFIX + FlumeConstants.CONFIG_ROWKEY_TYPE_GENERATOR,DefaultKeyGenerator.TIMESTAMP.name());
@@ -124,7 +126,7 @@ public class PhoenixSinkIT extends BaseHBaseManagedTimeIT {
         
         sinkContext = new Context ();
         sinkContext.put(FlumeConstants.CONFIG_TABLE, "flume_test");
-        sinkContext.put(FlumeConstants.CONFIG_JDBC_URL, TestUtil.PHOENIX_JDBC_URL);
+        sinkContext.put(FlumeConstants.CONFIG_JDBC_URL, getUrl());
         sinkContext.put(FlumeConstants.CONFIG_SERIALIZER,EventSerializers.REGEX.name());
         sinkContext.put(FlumeConstants.CONFIG_TABLE_DDL, ddl);
         sinkContext.put(FlumeConstants.CONFIG_SERIALIZER_PREFIX + FlumeConstants.CONFIG_REGULAR_EXPRESSION,"^([^\t]+)\t([^\t]+)$");
@@ -155,7 +157,7 @@ public class PhoenixSinkIT extends BaseHBaseManagedTimeIT {
         final String fullTableName = "FLUME_TEST";
         sinkContext = new Context ();
         sinkContext.put(FlumeConstants.CONFIG_TABLE, fullTableName);
-        sinkContext.put(FlumeConstants.CONFIG_JDBC_URL, TestUtil.PHOENIX_JDBC_URL);
+        sinkContext.put(FlumeConstants.CONFIG_JDBC_URL, getUrl());
         sinkContext.put(FlumeConstants.CONFIG_SERIALIZER,EventSerializers.REGEX.name());
         sinkContext.put(FlumeConstants.CONFIG_TABLE_DDL, ddl);
         sinkContext.put(FlumeConstants.CONFIG_SERIALIZER_PREFIX + FlumeConstants.CONFIG_REGULAR_EXPRESSION,"^([^\t]+)\t([^\t]+)$");
@@ -171,7 +173,7 @@ public class PhoenixSinkIT extends BaseHBaseManagedTimeIT {
         sink.setChannel(channel);
         
         sink.start();
-        HBaseAdmin admin = driver.getConnectionQueryServices(TestUtil.PHOENIX_JDBC_URL, TestUtil.TEST_PROPERTIES).getAdmin();
+        HBaseAdmin admin = driver.getConnectionQueryServices(getUrl(), TestUtil.TEST_PROPERTIES).getAdmin();
         try {
             boolean exists = admin.tableExists(fullTableName);
             Assert.assertTrue(exists);
