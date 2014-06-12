@@ -162,7 +162,7 @@ public enum ExpressionType {
     ExternalSqlTypeIdFunction(ExternalSqlTypeIdFunction.class),
     NthValueFunction(NthValueFunction.class),
     FirstValueFunction(FirstValueFunction.class),
-    LastValueFunction(LastValueFunction.class);
+    LastValueFunction(LastValueFunction.class),
     DecodeFunction(DecodeFunction.class),
     TimezoneOffsetFunction(TimezoneOffsetFunction.class);
     ExpressionType(Class<? extends Expression> clazz) {
