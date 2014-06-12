@@ -74,22 +74,22 @@ public class FirstLastNthValueDataContainer {
             byte[] value;
 
             if (lengthOfOrderValues != 0) {
-                key = Bytes.copy(payload, payloadOffset, lengthOfOrderValues);
+                key = copy(payload, payloadOffset, lengthOfOrderValues);
                 payloadOffset += lengthOfOrderValues;
             } else {
                 int l = Bytes.toInt(payload, payloadOffset);
                 payloadOffset += 4;
-                key = Bytes.copy(payload, payloadOffset, l);
+                key = copy(payload, payloadOffset, l);
                 payloadOffset += l;
             }
 
             if (lengthOfDataValues != 0) {
-                value = Bytes.copy(payload, payloadOffset, lengthOfDataValues);
+                value = copy(payload, payloadOffset, lengthOfDataValues);
                 payloadOffset += lengthOfDataValues;
             } else {
                 int l = Bytes.toInt(payload, payloadOffset);
                 payloadOffset += 4;
-                value = Bytes.copy(payload, payloadOffset, l);
+                value = copy(payload, payloadOffset, l);
                 payloadOffset += l;
             }
 
@@ -164,5 +164,16 @@ public class FirstLastNthValueDataContainer {
 
     public TreeMap getData() {
         return data;
+    }
+
+    // foreport functionality from org.apache.hadoop.hbase.util.Bytes 0.96
+    public static byte[] copy(byte[] bytes, final int offset, final int length) {
+        if (bytes == null) {
+            return null;
+        }
+
+        byte[] result = new byte[length];
+        System.arraycopy(bytes, offset, result, 0, length);
+        return result;
     }
 }
