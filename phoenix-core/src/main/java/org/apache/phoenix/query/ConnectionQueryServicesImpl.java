@@ -64,7 +64,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import com.google.protobuf.HBaseZeroCopyByteString;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.HColumnDescriptor;
@@ -89,10 +88,12 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.ipc.BlockingRpcCallback;
 import org.apache.hadoop.hbase.ipc.ServerRpcController;
 import org.apache.hadoop.hbase.protobuf.generated.ClientProtos.MutationProto;
+import org.apache.hadoop.hbase.security.User;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.hbase.util.VersionInfo;
 import org.apache.hadoop.hbase.zookeeper.ZKConfig;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.phoenix.compile.MutationPlan;
 import org.apache.phoenix.coprocessor.GroupedAggregateRegionObserver;
 import org.apache.phoenix.coprocessor.MetaDataEndpointImpl;
@@ -171,6 +172,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Closeables;
+import com.google.protobuf.HBaseZeroCopyByteString;
 
 
 public class ConnectionQueryServicesImpl extends DelegateQueryServices implements ConnectionQueryServices {
@@ -252,6 +254,15 @@ public class ConnectionQueryServicesImpl extends DelegateQueryServices implement
     
     private void openConnection() throws SQLException {
         try {
+            // check if we need to authenticate with kerberos
+            String clientKeytab = this.getProps().get(HBASE_CLIENT_KEYTAB);
+            String clientPrincipal = this.getProps().get(HBASE_CLIENT_PRINCIPAL);
+            if (clientKeytab != null && clientPrincipal != null) {
+                logger.info("Trying to connect to a secure cluster with keytab:" + clientKeytab);
+                UserGroupInformation.setConfiguration(config);
+                User.login(config, HBASE_CLIENT_KEYTAB, HBASE_CLIENT_PRINCIPAL, null);
+                logger.info("Successfull login to secure cluster!!");
+            }
             this.connection = HBaseFactoryProvider.getHConnectionFactory().createConnection(this.config);
         } catch (IOException e) {
             throw new SQLExceptionInfo.Builder(SQLExceptionCode.CANNOT_ESTABLISH_CONNECTION)
@@ -388,7 +399,6 @@ public class ConnectionQueryServicesImpl extends DelegateQueryServices implement
         return childQueryService;
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     public void clearTableRegionCache(byte[] tableName) throws SQLException {
         connection.clearRegionCache(TableName.valueOf(tableName));
@@ -410,7 +420,6 @@ public class ConnectionQueryServicesImpl extends DelegateQueryServices implement
                 List<HRegionLocation> locations = Lists.newArrayList();
                 byte[] currentKey = HConstants.EMPTY_START_ROW;
                 do {
-                  @SuppressWarnings("deprecation")
                 HRegionLocation regionLocation = connection.getRegionLocation(
                     TableName.valueOf(tableName), currentKey, reload);
                   locations.add(regionLocation);
@@ -945,7 +954,6 @@ public class ConnectionQueryServicesImpl extends DelegateQueryServices implement
      * Invoke meta data coprocessor with one retry if the key was found to not be in the regions
      * (due to a table split)
      */
-    @SuppressWarnings("deprecation")
     private MetaDataMutationResult metaDataCoprocessorExec(byte[] tableKey,
             Batch.Call<MetaDataService, MetaDataResponse> callable) throws SQLException {
         try {
@@ -1694,7 +1702,7 @@ public class ConnectionQueryServicesImpl extends DelegateQueryServices implement
      * Verifies that sequences exist and reserves values for them if reserveValues is true
      */
     @Override
-    public void validateSequences(List<SequenceKey> sequenceKeys, long timestamp, long[] values, SQLException[] exceptions, Sequence.Action action) throws SQLException {
+    public void validateSequences(List<SequenceKey> sequenceKeys, long timestamp, long[] values, SQLException[] exceptions, Sequence.ValueOp action) throws SQLException {
         incrementSequenceValues(sequenceKeys, timestamp, values, exceptions, 0, action);
     }
     
@@ -1711,11 +1719,11 @@ public class ConnectionQueryServicesImpl extends DelegateQueryServices implement
      */
     @Override
     public void incrementSequences(List<SequenceKey> sequenceKeys, long timestamp, long[] values, SQLException[] exceptions) throws SQLException {
-        incrementSequenceValues(sequenceKeys, timestamp, values, exceptions, 1, Sequence.Action.RESERVE);
+        incrementSequenceValues(sequenceKeys, timestamp, values, exceptions, 1, Sequence.ValueOp.RESERVE_SEQUENCE);
     }
 
     @SuppressWarnings("deprecation")
-    private void incrementSequenceValues(List<SequenceKey> keys, long timestamp, long[] values, SQLException[] exceptions, int factor, Sequence.Action action) throws SQLException {
+    private void incrementSequenceValues(List<SequenceKey> keys, long timestamp, long[] values, SQLException[] exceptions, int factor, Sequence.ValueOp action) throws SQLException {
         List<Sequence> sequences = Lists.newArrayListWithExpectedSize(keys.size());
         for (SequenceKey key : keys) {
             Sequence newSequences = new Sequence(key);

@@ -28,12 +28,14 @@ import org.apache.phoenix.expression.function.CeilTimestampExpression;
 import org.apache.phoenix.expression.function.CoalesceFunction;
 import org.apache.phoenix.expression.function.CountAggregateFunction;
 import org.apache.phoenix.expression.function.DistinctCountAggregateFunction;
+import org.apache.phoenix.expression.function.EncodeFunction;
 import org.apache.phoenix.expression.function.ExternalSqlTypeIdFunction;
 import org.apache.phoenix.expression.function.FloorDateExpression;
 import org.apache.phoenix.expression.function.FloorDecimalExpression;
 import org.apache.phoenix.expression.function.FloorFunction;
 import org.apache.phoenix.expression.function.IndexStateNameFunction;
 import org.apache.phoenix.expression.function.InvertFunction;
+import org.apache.phoenix.expression.function.LpadFunction;
 import org.apache.phoenix.expression.function.LTrimFunction;
 import org.apache.phoenix.expression.function.LengthFunction;
 import org.apache.phoenix.expression.function.LowerFunction;
@@ -73,11 +75,10 @@ import org.apache.phoenix.expression.function.LastValueFunction;
 import com.google.common.collect.Maps;
 
 /**
- * 
+ *
  * Enumeration of all Expression types that may be evaluated on the server-side.
  * Used during serialization and deserialization to pass Expression between client
  * and server.
- *  
  *
  *
  * @since 0.1
@@ -164,7 +165,9 @@ public enum ExpressionType {
     FirstValueFunction(FirstValueFunction.class),
     LastValueFunction(LastValueFunction.class),
     DecodeFunction(DecodeFunction.class),
-    TimezoneOffsetFunction(TimezoneOffsetFunction.class);
+    TimezoneOffsetFunction(TimezoneOffsetFunction.class),
+    EncodeFunction(EncodeFunction.class),
+    LpadFunction(LpadFunction.class);
     ExpressionType(Class<? extends Expression> clazz) {
         this.clazz = clazz;
     }

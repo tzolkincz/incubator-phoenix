@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.apache.phoenix</groupId>
   <artifactId>phoenix</artifactId>
-  <version>4.0.0-incubating</version>
+  <version>4.1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Apache Phoenix</name>
   <description>A SQL layer over HBase</description>
@@ -114,8 +114,8 @@
     <maven.rat.version>0.8</maven.rat.version>
 	
     <!--  Plugin options -->
-    <numForkedIT>4</numForkedIT>
-    <numForkedUT>4</numForkedUT>
+    <numForkedIT>3</numForkedIT>
+    <numForkedUT>3</numForkedUT>
     
     <!-- Set default encoding so multi-byte tests work correctly on the Mac -->
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
