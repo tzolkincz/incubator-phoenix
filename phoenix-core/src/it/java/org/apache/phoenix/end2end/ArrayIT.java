@@ -34,6 +34,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.Properties;
 
 import org.apache.phoenix.query.BaseTest;
@@ -289,7 +290,7 @@ public class ArrayIT extends BaseClientManagedTimeIT {
         String tenantId = getOrganizationId();
         createTableWithArray(getUrl(), getDefaultSplits(tenantId), null, ts - 2);
         String query = "upsert into table_with_array(ORGANIZATION_ID,ENTITY_ID,a_double_array) values('" + tenantId
-                + "','00A123122312312',ARRAY[2.0d,345.8d])";
+                + "','00A123122312312',ARRAY[2.0,345.8])";
         Properties props = new Properties(TEST_PROPERTIES);
         props.setProperty(PhoenixRuntime.CURRENT_SCN_ATTRIB, Long.toString(ts)); // Execute
                                                                                  // at
@@ -335,7 +336,7 @@ public class ArrayIT extends BaseClientManagedTimeIT {
             conn = DriverManager.getConnection(getUrl(), props);
             String query = "upsert into table_with_array(ORGANIZATION_ID,ENTITY_ID,a_double_array) "
                     + "SELECT organization_id, entity_id, a_double_array  FROM " + SIMPLE_TABLE_WITH_ARRAY
-                    + " WHERE a_double_array[2] = 89.96d";
+                    + " WHERE a_double_array[2] = 89.96";
             PreparedStatement statement = conn.prepareStatement(query);
             int executeUpdate = statement.executeUpdate();
             assertEquals(1, executeUpdate);
@@ -473,8 +474,8 @@ public class ArrayIT extends BaseClientManagedTimeIT {
             props.setProperty(PhoenixRuntime.CURRENT_SCN_ATTRIB, Long.toString(ts + 2)); // Execute at timestamp 2
             conn = DriverManager.getConnection(getUrl(), props);
             String query = "upsert into table_with_array(ORGANIZATION_ID,ENTITY_ID, a_unsigned_double, a_double_array) "
-                    + "SELECT organization_id, entity_id, x_double, ARRAY[23.4d, 22.1d, x_double]  FROM " + SIMPLE_TABLE_WITH_ARRAY
-                    + " WHERE a_double_array[2] = 89.96d";
+                    + "SELECT organization_id, entity_id, x_double, ARRAY[23.4, 22.1, x_double]  FROM " + SIMPLE_TABLE_WITH_ARRAY
+                    + " WHERE a_double_array[2] = 89.96";
             PreparedStatement statement = conn.prepareStatement(query);
             int executeUpdate = statement.executeUpdate();
             assertEquals(1, executeUpdate);
@@ -559,6 +560,34 @@ public class ArrayIT extends BaseClientManagedTimeIT {
         assertTrue(rs.next());
         PhoenixArray strArr = (PhoenixArray)rs.getArray(1);
         assertEquals(array, strArr);
+        conn.close();
+    }
+
+    @Test
+    public void testArrayWithFloatArray() throws Exception {
+        Connection conn;
+        PreparedStatement stmt;
+        ResultSet rs;
+        long ts = nextTimestamp();
+        Properties props = new Properties(TEST_PROPERTIES);
+        props.setProperty(PhoenixRuntime.CURRENT_SCN_ATTRIB, Long.toString(ts + 10));
+        conn = DriverManager.getConnection(getUrl(), props);
+        conn.createStatement().execute("CREATE TABLE t ( k VARCHAR PRIMARY KEY, a Float ARRAY[])");
+        conn.close();
+
+        props.setProperty(PhoenixRuntime.CURRENT_SCN_ATTRIB, Long.toString(ts + 30));
+        conn = DriverManager.getConnection(getUrl(), props);
+        stmt = conn.prepareStatement("UPSERT INTO t VALUES('a',ARRAY[2.0,3.0])");
+        int res = stmt.executeUpdate();
+        assertEquals(1, res);
+        conn.commit();
+        conn.close();
+        props.setProperty(PhoenixRuntime.CURRENT_SCN_ATTRIB, Long.toString(ts + 40));
+        conn = DriverManager.getConnection(getUrl(), props);
+        rs = conn.createStatement().executeQuery("SELECT ARRAY_ELEM(a,2) FROM t");
+        assertTrue(rs.next());
+        Float f = new Float(3.0);
+        assertEquals(f, (Float)rs.getFloat(1));
         conn.close();
     }
 
@@ -1206,6 +1235,83 @@ public class ArrayIT extends BaseClientManagedTimeIT {
         assertEquals("a", rs.getString(1));
         assertEquals("def", rs.getString(2));
         conn.close();
+    }
+
+    @Test
+    public void testUpsertValuesWithNull() throws Exception {
+        long ts = nextTimestamp();
+        String tenantId = getOrganizationId();
+        createTableWithArray(getUrl(), getDefaultSplits(tenantId), null, ts - 2);
+        String query = "upsert into table_with_array(ORGANIZATION_ID,ENTITY_ID,a_double_array) values('" + tenantId
+                + "','00A123122312312',null)";
+        Properties props = new Properties(TEST_PROPERTIES);
+        props.setProperty(PhoenixRuntime.CURRENT_SCN_ATTRIB, Long.toString(ts)); // Execute
+                                                                                 // at
+        Connection conn = DriverManager.getConnection(getUrl(), props);
+        try {
+            PreparedStatement statement = conn.prepareStatement(query);
+            int executeUpdate = statement.executeUpdate();
+            assertEquals(1, executeUpdate);
+            conn.commit();
+            statement.close();
+            conn.close();
+            // create another connection
+            props = new Properties(TEST_PROPERTIES);
+            props.setProperty(PhoenixRuntime.CURRENT_SCN_ATTRIB, Long.toString(ts + 2)); // Execute at timestamp 2
+            conn = DriverManager.getConnection(getUrl(), props);
+            query = "SELECT ARRAY_ELEM(a_double_array,2) FROM table_with_array";
+            statement = conn.prepareStatement(query);
+            ResultSet rs = statement.executeQuery();
+            assertTrue(rs.next());
+            // Need to support primitive
+            Double[] doubleArr = new Double[1];
+            doubleArr[0] = 0.0d;
+            conn.createArrayOf("DOUBLE", doubleArr);
+            Double result = rs.getDouble(1);
+            assertEquals(doubleArr[0], result);
+            assertFalse(rs.next());
+        } finally {
+            conn.close();
+        }
+    }
+    
+    @Test
+    public void testUpsertValuesWithNullUsingPreparedStmt() throws Exception {
+        long ts = nextTimestamp();
+        String tenantId = getOrganizationId();
+        createTableWithArray(getUrl(), getDefaultSplits(tenantId), null, ts - 2);
+        String query = "upsert into table_with_array(ORGANIZATION_ID,ENTITY_ID,a_string_array) values(?, ?, ?)";
+        Properties props = new Properties(TEST_PROPERTIES);
+        props.setProperty(PhoenixRuntime.CURRENT_SCN_ATTRIB, Long.toString(ts)); // Execute
+                                                                                 // at
+        Connection conn = DriverManager.getConnection(getUrl(), props);
+        try {
+            PreparedStatement statement = conn.prepareStatement(query);
+            statement.setString(1, tenantId);
+            statement.setString(2, "00A123122312312");
+            statement.setNull(3, Types.ARRAY);
+            int executeUpdate = statement.executeUpdate();
+            assertEquals(1, executeUpdate);
+            conn.commit();
+            statement.close();
+            conn.close();
+            // create another connection
+            props = new Properties(TEST_PROPERTIES);
+            props.setProperty(PhoenixRuntime.CURRENT_SCN_ATTRIB, Long.toString(ts + 2)); // Execute at timestamp 2
+            conn = DriverManager.getConnection(getUrl(), props);
+            query = "SELECT ARRAY_ELEM(a_string_array,1) FROM table_with_array";
+            statement = conn.prepareStatement(query);
+            ResultSet rs = statement.executeQuery();
+            assertTrue(rs.next());
+            String[] strArr = new String[1];
+            strArr[0] = null;
+            conn.createArrayOf("VARCHAR", strArr);
+            String result = rs.getString(1);
+            assertEquals(strArr[0], result);
+            assertFalse(rs.next());
+        } finally {
+            conn.close();
+        }
     }
 
     @Test
