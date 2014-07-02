@@ -73,6 +73,7 @@ import org.apache.phoenix.expression.function.DecodeFunction;
 import org.apache.phoenix.expression.function.NthValueFunction;
 import org.apache.phoenix.expression.function.FirstValueFunction;
 import org.apache.phoenix.expression.function.LastValueFunction;
+import org.apache.phoenix.expression.function.ConvertTimezoneFunction;
 
 import com.google.common.collect.Maps;
 
@@ -167,6 +168,7 @@ public enum ExpressionType {
     NthValueFunction(NthValueFunction.class),
     FirstValueFunction(FirstValueFunction.class),
     LastValueFunction(LastValueFunction.class),
+    ConvertTimezoneFunction(ConvertTimezoneFunction.class),
     DecodeFunction(DecodeFunction.class),
     TimezoneOffsetFunction(TimezoneOffsetFunction.class),
     EncodeFunction(EncodeFunction.class),
